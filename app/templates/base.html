@@ -2,9 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>$Title$</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Title</title>
+  <link rel="stylesheet" href="{{url_for('static', filename='css/bulmaswatch.min.css')}}">
 </head>
 <body>
-$END$
+  {% block page_content %}
+  {% endblock %}
+  {% block scripts %}
+    <script src="{{url_for('static', filename='js/jquery-3.3.1.min.js')}}"></script>
+    <script src="{{url_for('static', filename='js/knockout-3.4.2.js')}}"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
+  {% endblock %}
 </body>
 </html>
