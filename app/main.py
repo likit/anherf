@@ -1,4 +1,5 @@
 import os
+import click
 import qrcode
 import datetime
 from flask import (Flask, jsonify, render_template,
@@ -24,6 +25,7 @@ mail.init_app(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+from .models import *
 
 def random_qr(url):
     qr = qrcode.QRCode(version=1,
@@ -101,6 +103,13 @@ def checkin(rid=None):
 def get_qrimg(rid):
     img = random_qr(url=url_for('checkin', rid=rid, _external=True))
     img.save('{}/{}.png'.format(qrimage_dir, rid), 'png')
+
+from .load_data import load
+
+@app.cli.command()
+@click.argument('inputfile')
+def load_data(inputfile):
+    load(inputfile)
 
 
 if __name__ == '__main__':
