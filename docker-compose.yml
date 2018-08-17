@@ -10,8 +10,11 @@ services:
   web:
     build: .
     command: python main.py
+    environment:
+      - FLASK_APP=/app/main.py
+      - DEBUG=1
     volumes:
-      - ./code:/code
+      - ./app:/app
     ports:
       - "5550:5000"
     depends_on:
