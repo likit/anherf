@@ -1,11 +1,11 @@
 import os
-import gspread
 import qrcode
 import datetime
-import cStringIO
-from oauth2client.service_account import ServiceAccountCredentials
-from flask import Flask, jsonify, render_template, send_file, request, url_for
+from flask import (Flask, jsonify, render_template,
+                    send_file, request, url_for)
 from flask_mail import Message, Mail
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 mail = Mail()
 
@@ -18,16 +18,12 @@ app.config['MAIL_USERNAME'] = 'likit.pre@mahidol.edu'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anherf'
 mail.init_app(app)
 
-googlesheet_url = 'https://docs.google.com/spreadsheets/d/1GZl2iIdG7byi6ksdP6JS68NvqB2ouZ3Op5MOIabdyCU/edit#gid=0'
-googlesheet_checkin_url = 'https://docs.google.com/spreadsheets/d/1Uax4sVcca5hjU-mv5Fovdd6sFRss1l_aLdxtW4SyeNE/edit#gid=0'
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
-def get_credential():
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    json_file = os.environ.get('GOOGLE_CREDENTIAL_FILE')
-    credential = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
-    return credential
 
 def random_qr(url):
     qr = qrcode.QRCode(version=1,
@@ -43,27 +39,14 @@ def random_qr(url):
 
 @app.route('/api/register/list')
 def get_list_api():
-    gc = gspread.authorize(get_credential())
-    wks = gc.open_by_url(googlesheet_url).sheet1
-    values = wks.get_all_values()
+    values = []
     return jsonify(values)
-
-
-@app.route('/register/qr/<int:rid>')
-def gen_qrimg(rid):
-    img = random_qr(url=url_for('checkin', rid=rid, _external=True))
-    img_buf = cStringIO.StringIO()
-    img.save(img_buf)
-    img_buf.seek(0)
-    return send_file(img_buf, mimetype='image/png')
 
 
 @app.route('/register')
 def show_register():
-    gc = gspread.authorize(get_credential())
-    wks = gc.open_by_url(googlesheet_url).sheet1
-    values = wks.get_all_values()
-    return render_template('list.html', plist=values[1:])
+    values = []
+    return render_template('list.html', plist=values)
 
 
 @app.route('/register/mail')
