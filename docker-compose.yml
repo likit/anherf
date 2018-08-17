@@ -9,11 +9,11 @@ services:
       - "5436:5432"
   web:
     build: .
-    command: python tm/manage.py runserver 0.0.0.0:8000
+    command: python main.py
     volumes:
       - ./code:/code
     ports:
-      - "5550:8000"
+      - "5550:5000"
     depends_on:
       - pg
 
