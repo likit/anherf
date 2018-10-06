@@ -1,9 +1,10 @@
 import os
 import click
-import qrcode
+import barcode
+from barcode.writer import ImageWriter
 import datetime
 from flask import (Flask, jsonify, render_template,
-                    send_file, request, url_for)
+                    send_file, request, url_for, redirect)
 from flask_mail import Message, Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -27,28 +28,17 @@ migrate = Migrate(app, db)
 
 from .models import *
 
-def random_qr(url):
-    qr = qrcode.QRCode(version=1,
-                       error_correction=qrcode.constants.ERROR_CORRECT_L,
-                       box_size=10,
-                       border=4)
-
-    qr.add_data(url)
-    qr.make(fit=True)
-    img = qr.make_image()
-    return img
-
 
 @app.route('/api/register/list')
 def get_list_api():
-    values = []
-    return jsonify(values)
+    participants = Participant.query.all()[:30]
+    return jsonify(participants)
 
 
 @app.route('/register')
 def show_register():
-    values = []
-    return render_template('list.html', plist=values)
+    participants = Participant.query.all()
+    return render_template('list.html', plist=participants)
 
 
 @app.route('/register/mail')
@@ -56,53 +46,62 @@ def send_mail():
     rid = request.args.get('rid')
     recp_mail = request.args.get('email')
 
-    msg = Message('Welcome to ANHERF conference.',
+    msg = Message('Welcome to ANHPERF conference.',
                   sender="likit.pre@mahidol.edu",
                   recipients=[recp_mail])
 
     if not os.path.exists(os.path.join(qrimage_dir, '{}.png'.format(rid))):
-        get_qrimg(rid)
+        get_barcode(rid)
 
-    with app.open_resource("qrimages/{}.png".format(rid)) as fp:
+    with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
         msg.attach("{}.png".format(rid), "image/png", fp.read())
 
     mail.send(msg)
     return 'The mail has been sent.'
 
 
-@app.route('/api/checkin/<rid>')
-@app.route('/api/checkin')
+@app.route('/paid/<rid>')
+def pay(rid=None):
+    if not rid:
+        return jsonify({'message': 'No account ID specified'})
+    register = Registration.query.rilter(Registration.id==rid).first()
+    # participant can only check in a single time
+    if register.checked_at is None:
+        register.pay_status = True
+        register.checked_at = datetime.datetime.utcnow()
+    db.session.add(register)
+    db.session.commit()
+    return redirect(request.referrer)
+
+
+@app.route('/checkin/<rid>')
+@app.route('/checkin')
 def checkin(rid=None):
     if not rid:
         return jsonify({'message': 'No account ID specified'})
     else:
-        gc = gspread.authorize(get_credential())
-        wks = gc.open_by_url(googlesheet_url).sheet1
-        chckwks = gc.open_by_url(googlesheet_checkin_url).sheet1
-        cell = wks.find(rid)
-        data = wks.row_values(cell.row)
-
-        if chckwks.cell(cell.row, 8).value and chckwks.cell(cell.row, 9).value:
-            return jsonify({'message': 'Already checked in.'})
-
-        checkin_date = datetime.datetime.now().strftime('%m/%d/%Y')
-        checkin_time = datetime.datetime.now().strftime('%H:%M:%S')
-        chckwks.update_cell(cell.row, 1, rid)
-        chckwks.update_cell(cell.row, 2, data[52])
-        chckwks.update_cell(cell.row, 3, data[9])
-        chckwks.update_cell(cell.row, 4, data[10])
-        chckwks.update_cell(cell.row, 5, data[3])
-        chckwks.update_cell(cell.row, 6, data[48])
-        chckwks.update_cell(cell.row, 7, data[5])
-        chckwks.update_cell(cell.row, 8, checkin_date)
-        chckwks.update_cell(cell.row, 9, checkin_time)
-
-        return jsonify({'message': 'Checked in at %s %s.' % (checkin_date, checkin_time), 'rid': cell.row})
+        if len(rid) == 9:
+            trim_id = int(rid[4:])
+        else:
+            trim_id = rid
+        register = Registration.query.filter(Registration.participant_id==trim_id).first()
+        # participant can only check in a single time
+        if register.checked_at is None:
+            register.checked_at = datetime.datetime.utcnow()
+        db.session.add(register)
+        db.session.commit()
+        return redirect(request.referrer)
 
 
-def get_qrimg(rid):
-    img = random_qr(url=url_for('checkin', rid=rid, _external=True))
-    img.save('{}/{}.png'.format(qrimage_dir, rid), 'png')
+def get_barcode(rid):
+    EAN = barcode.get_barcode_class('code128')
+    ean = EAN(u'2018{:05}'.format(int(rid)), writer=ImageWriter())
+    print(ean, rid)
+    imgname = ean.save('{}/{}'.format(qrimage_dir, rid))
+    fp = open('{}'.format(imgname), 'wb')
+    ean.write(fp)
+    fp.close()
+
 
 from .load_data import load
 
@@ -110,6 +109,11 @@ from .load_data import load
 @click.argument('inputfile')
 def load_data(inputfile):
     load(inputfile)
+
+@app.cli.command()
+@click.argument('id')
+def gen_barcode(id):
+    get_barcode(id)
 
 
 if __name__ == '__main__':

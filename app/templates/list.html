@@ -1,80 +1,101 @@
 {% extends "base.html" %}
 {% block page_content %}
 <section class="section">
-  <div class="container">
-    <h1 class="title">ANHERF Registration System</h1>
-    <div class="columns">
-      <div class="column">
-        <table class="table">
-          <thead>
-          <th>No.</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Affiliation</th>
-          <th>Registered at</th>
-          <th>Check in</th>
-          <th>View QR code</th>
-          <th>Send email</th>
-          </thead>
-          <tbody>
-          {% for record in plist %}
-          <tr>
-            <td>{{record[0]}}</td>
-            <td>{{ record[52] }} {{record[9]}} {{record[10]}}</td>
-            <td>{{record[3]}}</td>
-            <td>{{record[48]}}</td>
-            <td>{{record[5]}}</td>
-            <td>
-              <span class="icon">
-                <a data-bind="click: function(data, event) { checkin({{record[0]}},data,event) }">
-                <i class="far fa-check-circle"></i>
-                </a>
-              </span>
-            </td>
-            <td>
-            <span class="icon">
-              <a data-bind="click: function(data, event) { changeQrImg({{record[0]}},data,event) }">
-              <i class="fas fa-qrcode"></i>
-              </a>
-            </span>
-            </td>
-            <td>
-              <a href="{{ url_for('send_mail', rid=record[0], email=record[3]) }}">
-              <span class="icon">
-                <i class="far fa-envelope"></i>
-              </span>
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="column is-one-fifth">
-        <img data-bind="attr: {src: '/register/qr/' + curQrImg()}">
-        <span data-bind="text: 'ID: ' + curQrImg()" class="subtitle"></span>
-      </div>
+    <div class="container">
+        <h1 class="title">ANHPERF Registration System</h1>
+        <div class="columns">
+            <div class="column is-half">
+                <div class="field">
+                    <div class="control">
+                        <input class="input is-rounded is-medium is-danger" type="text" data-bind="textInput: barcode"
+                               placeholder="Scan barcode or enter registration code"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <table class="stripe" id="myTable">
+                    <thead>
+                    <th>No.</th>
+                    <th>Title</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Affiliation</th>
+                    <th>Role</th>
+                    <th>Registered at</th>
+                    <th>Payment</th>
+                    <th>Check in</th>
+                    <th>Manual check in</th>
+                    <th>Resend email</th>
+                    </thead>
+                    <tbody>
+                    {% for record in plist %}
+                    <tr>
+                        <td>{{record.id}}</td>
+                        <td>{{record.title}}</td>
+                        <td>{{record.firstname}}</td>
+                        <td>{{record.lastname}}</td>
+                        <td>{{record.faculty}} {{ record.affiliation }}</td>
+                        <td>{{record.role.desc}}</td>
+                        <td>{{record.registers[-1].registered_at}}</td>
+                        {% if not record.registers[-1].payment_required or record.registers[-1].pay_status %}
+                        <td><i class="far fa-thumbs-up has-text-success"></i></td>
+                        {% else %}
+                        <td><a class="button is-outlined is-rounded is-danger" href="{{ url_for('pay', rid=record.registers[-1].id) }}">Pay</a></td>
+                        {% endif %}
+                        <td>
+                            {{record.registers[-1].checked_at}}
+                        </td>
+                        <td>
+                            {% if record.registers[-1].payment_required and not record.registers[-1].pay_status %}
+                            <span class="icon"><i class="far fa-times-circle"></i></span>
+                            {% else %}
+                                {% if record.registers[-1].checked_at %}
+                                <span class="icon"><i class="fas fa-check-circle"></i></span>
+                                {% else %}
+                                <a href="{{ url_for('checkin', rid=record.registers[-1].id) }}">
+                                    <span class="icon"><i class="far fa-check-circle"></i></span>
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('send_mail', rid=record.registers[-1].id, email=record.email) }}">
+                              <span class="icon"><i class="far fa-envelope"></i></span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
 </section>
 {% endblock %}
 {% block scripts %}
-{{ super() }}
+{{super()}}
 <script>
-  var ViewModel = function() {
-    var self = this;
-    self.curQrImg = ko.observable({{plist[0][0]|tojson|safe}});
-    self.changeQrImg = function(rid, data, event) {
-      self.curQrImg(rid);
-      console.log('update qr image to ' + rid);
-    };
-    self.checkin = function(rid, data, event) {
-        $.get("{{ url_for('checkin')}}" + "/" + rid).done(function(data, status) {
-            alert(data['message']);
+    var ViewModel = function () {
+        var self = this;
+        self.barcode = ko.observable();
+        self.barcode.subscribe(function (value) {
+            if (value.length === 9) {
+                window.location.href = "/checkin/" + value;
+            }
         });
-    };
-  };
-  var vm = new ViewModel();
-  ko.applyBindings(vm);
+    }
+    var vm = new ViewModel();
+    ko.applyBindings(vm);
 </script>
-{% endblock %}
+<script>
+    $(document).ready(function () {
+        $('#myTable').DataTable(
+            {
+                "order": [[8, 'desc']]
+            }
+        );
+    });
+</script>
+{% endblock %}}
