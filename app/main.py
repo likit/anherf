@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import click
 import barcode
@@ -15,6 +17,7 @@ basedir =  os.path.dirname(os.path.abspath(__file__))
 qrimage_dir = os.path.join(basedir, 'qrimages')
 
 app = Flask(__name__)
+app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_USERNAME'] = 'likit.pre@mahidol.edu'
 app.config['MAIL_USE_TLS'] = True
@@ -42,9 +45,10 @@ def show_register():
 
 
 @app.route('/register/mail')
-def send_mail():
-    rid = request.args.get('rid')
-    recp_mail = request.args.get('email')
+def send_mail(rid=None, recp_mail=None):
+    if rid is None:
+        rid = request.args.get('rid')
+        recp_mail = request.args.get('email')
 
     msg = Message('Welcome to ANHPERF conference.',
                   sender="likit.pre@mahidol.edu",
@@ -56,8 +60,38 @@ def send_mail():
     with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
         msg.attach("{}.png".format(rid), "image/png", fp.read())
 
-    mail.send(msg)
-    return 'The mail has been sent.'
+    try:
+        mail.send(msg)
+    except:
+        return 'An error has occurred.'
+    else:
+        return 'The mail has been sent.'
+
+
+def send_mail_payment_reminder(recp_mail=None):
+    with app.open_resource("templates/participant_mail.html") as template_fp:
+        content = template_fp.read().decode('utf-8')
+
+    # mail_subject = 'ยินดีต้อนรับเข้าสู่งานประชุมวิขาการประจำปีระดับชาติ การพัฒนาการศึกษาสำหรับบุคลากรสุขภาพ ครั้งที่ 5'
+    msg = Message(subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF 2018)',
+                    sender="likit.pre@mahidol.edu",
+                    body=content,
+                    recipients=[recp_mail],
+                    cc=['likit.pre@mahidol.edu'],
+                  )
+    try:
+        mail.send(msg)
+    except Exception as e:
+        raise(e)
+        return 'An error has occurred.'
+    else:
+        return 'The mail has been sent.'
+
+
+@app.route('/register/mail/test')
+def test_mail():
+    response = send_mail_payment_reminder(recp_mail='manuschonk@gmail.com')
+    return response
 
 
 @app.route('/paid/<rid>')
@@ -96,7 +130,6 @@ def checkin(rid=None):
 def get_barcode(rid):
     EAN = barcode.get_barcode_class('code128')
     ean = EAN(u'2018{:05}'.format(int(rid)), writer=ImageWriter())
-    print(ean, rid)
     imgname = ean.save('{}/{}'.format(qrimage_dir, rid))
     fp = open('{}'.format(imgname), 'wb')
     ean.write(fp)
