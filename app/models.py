@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship, backref
 from .main import db
 
@@ -28,6 +28,7 @@ class Registration(db.Model):
     checked_at = Column('checked_at', DateTime())
     payment_required = Column('payment_required', Boolean(), default=False)
     pay_status = Column('pay_status', Boolean(), default=False)
+    paid_on = Column('paid_on', Date(), nullable=True)
 
 
 class Role(db.Model):
