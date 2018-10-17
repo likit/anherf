@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from sys import stderr
 import click
 import barcode
 from barcode.writer import ImageWriter
@@ -19,7 +20,7 @@ qrimage_dir = os.path.join(basedir, 'qrimages')
 app = Flask(__name__)
 app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_USERNAME'] = 'likit.pre@mahidol.edu'
+app.config['MAIL_USERNAME'] = 'healthprofessionals21@gmail.com'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
@@ -68,30 +69,28 @@ def send_mail(rid=None, recp_mail=None):
         return 'The mail has been sent.'
 
 
-def send_mail_payment_reminder(recp_mail=None):
+@app.cli.command()
+def send_mail_payment_reminder():
+    regs = Registration.query.filter_by(payment_required=True,
+                                                pay_status=False)
+    recp_mails = []
+    for r in regs:
+        recp_mails.append(r.participant.email)
+
     with app.open_resource("templates/participant_mail.html") as template_fp:
         content = template_fp.read().decode('utf-8')
 
-    # mail_subject = 'ยินดีต้อนรับเข้าสู่งานประชุมวิขาการประจำปีระดับชาติ การพัฒนาการศึกษาสำหรับบุคลากรสุขภาพ ครั้งที่ 5'
-    msg = Message(subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF 2018)',
-                    sender="likit.pre@mahidol.edu",
-                    body=content,
-                    recipients=[recp_mail],
-                    cc=['likit.pre@mahidol.edu'],
-                  )
-    try:
-        mail.send(msg)
-    except Exception as e:
-        raise(e)
-        return 'An error has occurred.'
-    else:
-        return 'The mail has been sent.'
-
-
-@app.route('/register/mail/test')
-def test_mail():
-    response = send_mail_payment_reminder(recp_mail='manuschonk@gmail.com')
-    return response
+    with mail.connect() as conn:
+        for recp in recp_mails[1:]:
+            msg = Message(subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF 2018)',
+                            sender="healthprofessionals21@gmail.com",
+                            body=content,
+                            recipients=[recp],
+                            cc=['likit.pre@mahidol.edu'])
+            try:
+                conn.send(msg)
+            except Exception:
+                print(recp, file=stderr)
 
 
 @app.route('/paid/<rid>')
