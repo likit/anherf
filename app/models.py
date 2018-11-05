@@ -23,6 +23,7 @@ class Participant(db.Model):
 class Registration(db.Model):
     __tablename__ = 'registrations'
     id = Column('id', Integer, primary_key=True, autoincrement=True)
+    regcode = Column('regcode', String(16), unique=True)
     registered_at = Column('registered_at', DateTime())
     participant_id = Column('participant_id', ForeignKey('participants.id'))
     checked_at = Column('checked_at', DateTime())
