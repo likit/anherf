@@ -17,7 +17,7 @@
             <div class="column">
                 <table class="stripe" id="myTable">
                     <thead>
-                    <th>No.</th>
+                    <th>Barcode No.</th>
                     <th>Title</th>
                     <th>First Name</th>
                     <th>Last Name</th>
@@ -25,14 +25,13 @@
                     <th>Role</th>
                     <th>Registered at</th>
                     <th>Payment</th>
-                    <th>Check in</th>
+                    <th>Checked-in time</th>
                     <th>Manual check in</th>
-                    <th>Resend email</th>
                     </thead>
                     <tbody>
                     {% for record in plist %}
                     <tr>
-                        <td>{{record.id}}</td>
+                        <td>{{ '{}{:05}'.format(2018,record.registers[-1].id) }}</td>
                         <td>{{record.title}}</td>
                         <td>{{record.firstname}}</td>
                         <td>{{record.lastname}}</td>
@@ -49,21 +48,16 @@
                         </td>
                         <td>
                             {% if record.registers[-1].payment_required and not record.registers[-1].pay_status %}
-                            <span class="icon"><i class="far fa-times-circle"></i></span>
+                            <a class="button is-rounded is-outlined is-disabled">Check in</a>
                             {% else %}
                                 {% if record.registers[-1].checked_at %}
                                 <span class="icon"><i class="fas fa-check-circle"></i></span>
                                 {% else %}
-                                <a href="{{ url_for('checkin', rid=record.registers[-1].id) }}">
-                                    <span class="icon"><i class="far fa-check-circle"></i></span>
+                                <a href="{{ url_for('checkin', rid=record.registers[-1].id) }}"
+                                    class="button is-outlined is-rounded is-primary">Check in
                                 </a>
                                 {% endif %}
                             {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('send_mail', rid=record.registers[-1].id, email=record.email) }}">
-                              <span class="icon"><i class="far fa-envelope"></i></span>
-                            </a>
                         </td>
                     </tr>
                     {% endfor %}
