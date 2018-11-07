@@ -70,6 +70,11 @@ def send_mail(rid=None, recp_mail=None):
 
 
 @app.cli.command()
+def send_mail_commitee():
+    pass
+
+
+@app.cli.command()
 def send_mail_payment_reminder():
     regs = Registration.query.filter_by(payment_required=True,
                                                 pay_status=False)
@@ -117,12 +122,13 @@ def checkin(rid=None):
             trim_id = int(rid[4:])
         else:
             trim_id = rid
-        register = Registration.query.filter(Registration.participant_id==trim_id).first()
-        # participant can only check in a single time
-        if register.checked_at is None:
-            register.checked_at = datetime.datetime.utcnow()
-        db.session.add(register)
-        db.session.commit()
+        register = Registration.query.filter(Registration.id==trim_id).first()
+        if (register.payment_required and register.pay_status) or \
+                (not register.payment_required):
+            checkin = CheckIn(checked_at=datetime.datetime.utcnow())
+            checkin.registration = register
+            db.session.add(checkin)
+            db.session.commit()
         return redirect(request.referrer)
 
 

@@ -44,7 +44,11 @@
                         <td><a class="button is-outlined is-rounded is-danger" href="{{ url_for('pay', rid=record.registers[-1].id) }}">Pay</a></td>
                         {% endif %}
                         <td>
-                            {{record.registers[-1].checked_at}}
+                            {% if record.registers[-1].checkins %}
+                                {% for chk in record.registers[-1].checkins %}
+                                {{chk}},
+                                {% endfor %}
+                            {% endif %}
                         </td>
                         <td>
                             {% if record.registers[-1].payment_required and not record.registers[-1].pay_status %}

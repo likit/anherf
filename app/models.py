@@ -26,10 +26,20 @@ class Registration(db.Model):
     regcode = Column('regcode', String(16), unique=True)
     registered_at = Column('registered_at', DateTime())
     participant_id = Column('participant_id', ForeignKey('participants.id'))
-    checked_at = Column('checked_at', DateTime())
     payment_required = Column('payment_required', Boolean(), default=False)
     pay_status = Column('pay_status', Boolean(), default=False)
     paid_on = Column('paid_on', Date(), nullable=True)
+
+
+class CheckIn(db.Model):
+    __tablename__ = 'checkins'
+    id = Column('id', Integer, primary_key=True, autoincrement=True)
+    checked_at = Column('checked_at', DateTime())
+    reg_id = Column('reg_id', db.ForeignKey('registrations.id'))
+    registration = relationship('Registration', backref='checkins')
+
+    def __repr__(self):
+        return self.checked_at.strftime('%d-%m-%Y %H:%M:%S')
 
 
 class Role(db.Model):
