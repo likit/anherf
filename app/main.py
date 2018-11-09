@@ -24,7 +24,7 @@ app.config['MAIL_USERNAME'] = 'healthprofessionals21@gmail.com'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anherf'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anhperf_dev'
 mail.init_app(app)
 
 db = SQLAlchemy(app)
@@ -70,8 +70,46 @@ def send_mail(rid=None, recp_mail=None):
 
 
 @app.cli.command()
-def send_mail_commitee():
-    pass
+@click.argument('rid')
+def send_mail_barcode(rid=None,role=None):
+
+    if rid:
+        reg = Registration.query.filter_by(id=rid).first()
+        participants = [reg.participant]
+    else:
+        role = 'invitee'
+        participants = []
+
+        for p in Participant.query.all():
+            if p.role.desc == role and p.email:
+                print(p.id, p.email, p.title, p.firstname, p.lastname, p.registers[-1].id, p.role.desc)
+                participants.append(p)
+
+    errors = []
+
+    with mail.connect() as conn:
+        for recp in participants:
+            name = '{} {} {}'.format(recp.title,
+                                     recp.firstname,
+                                     recp.lastname)
+
+            with app.open_resource("templates/committee_mail.html") as template_fp:
+                content = template_fp.read().decode('utf-8').replace('*****', name)
+
+            msg = Message(subject='Welcome to the 5th Annual Health National Professional Reform Forum (ANHPERF 2018)',
+                          sender="healthprofessionals21@gmail.com",
+                          body=content,
+                          recipients=[recp.email],
+                          cc=['likit.pre@mahidol.edu'])
+            rid = recp.registers[-1].id
+            with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
+                msg.attach("{}.png".format(rid), "image/png", fp.read())
+            try:
+                conn.send(msg)
+            except:
+                errors.append(recp)
+    for e in errors:
+        print(e.email, e.firstname, e.lastname, e.id)
 
 
 @app.cli.command()
@@ -151,7 +189,12 @@ def load_data(inputfile):
 @app.cli.command()
 @click.argument('id')
 def gen_barcode(id):
-    get_barcode(id)
+    if id == 'all':
+        for reg in Registration.query.all():
+            get_barcode(reg.id)
+            print('Barcode for {} has been generated...'.format(reg.id))
+    else:
+        get_barcode(id)
 
 
 if __name__ == '__main__':
