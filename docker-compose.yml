@@ -9,7 +9,7 @@ services:
       - "5436:5432"
   web:
     build: .
-    command: flask run -h 0.0.0.0 -p 5000
+    command: gunicorn --bind 0.0.0.0:5000 app.main:app
     environment:
       - FLASK_APP=/app/main.py
       - FLASK_DEBUG
