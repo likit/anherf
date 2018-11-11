@@ -38,12 +38,19 @@
                 </span><br>
                 <span class="subtitle">Succeeded!</span>
             </div>
+            {% elif status=='repeated' %}
+            <div class="column has-text-centered">
+                <span class="icon is-large">
+                    <i class="fas fa-times-circle has-text-warning fa-3x"></i>
+                </span><br>
+                <span class="subtitle">Already checked in today!</span>
+            </div>
             {% else %}
             <div class="column has-text-centered">
                 <span class="icon is-large">
                     <i class="fas fa-times-circle has-text-danger fa-3x"></i>
                 </span><br>
-                <span class="subtitle">Failed!</span>
+                <span class="subtitle">Payment required!</span>
             </div>
             {% endif %}
         </div>
@@ -51,7 +58,7 @@
             <div class="column is-offset-2">
                 <table class="table is-narrow">
                     <thead>
-                        <th>Barcode</th>
+                        <th>Registration No.</th>
                         <th>Title</th>
                         <th>First name</th>
                         <th>Last name</th>
@@ -68,7 +75,7 @@
                             <td>{{ register.participant.lastname }}</td>
                             <td>{{ register.participant.email }}</td>
                             <td>{{ register.participant.role.desc }}</td>
-                            <td>{{ register.registered_at }}</td>
+                            <td>{{ register.registered_at|timezoned }}</td>
                             {% if not register.payment_required or register.pay_status %}
                             <td><i class="far fa-thumbs-up has-text-success"></i></td>
                             {% else %}

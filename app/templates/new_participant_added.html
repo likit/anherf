@@ -46,6 +46,15 @@
                 </table>
             </div>
         </div>
+        <div class="columns">
+            {% if registration.payment_required and not registration.pay_status %}
+            <a class="button is-rounded is-outlined is-disabled">Check in</a>
+            {% else %}
+            <a href="{{ url_for('checkin', rid=registration.id) }}"
+               class="button is-outlined is-rounded is-primary">Check in
+            </a>
+            {% endif %}
+        </div>
     </div>
 </section>
 {% endblock %}
