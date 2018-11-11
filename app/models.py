@@ -24,7 +24,7 @@ class Registration(db.Model):
     __tablename__ = 'registrations'
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     regcode = Column('regcode', String(16), unique=True)
-    registered_at = Column('registered_at', DateTime())
+    registered_at = Column('registered_at', DateTime(timezone=True))
     participant_id = Column('participant_id', ForeignKey('participants.id'))
     payment_required = Column('payment_required', Boolean(), default=False)
     pay_status = Column('pay_status', Boolean(), default=False)
@@ -34,7 +34,7 @@ class Registration(db.Model):
 class CheckIn(db.Model):
     __tablename__ = 'checkins'
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    checked_at = Column('checked_at', DateTime())
+    checked_at = Column('checked_at', DateTime(timezone=True))
     reg_id = Column('reg_id', db.ForeignKey('registrations.id'))
     registration = relationship('Registration', backref='checkins')
 
