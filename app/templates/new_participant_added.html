@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block page_content %}
+<div class="tabs">
+    <ul>
+        <li class=""><a href="/">Home</a></li>
+        <li class=""><a href="{{ url_for('scan') }}">Scan Barcode</a></li>
+        <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
+        <li class=""><a href="/admin">Admin Page</a></li>
+        <li class="is-active"><a href="{{ url_for('add_participant') }}">Add</a></li>
+    </ul>
+</div>
+<section class="section">
+    <div class="container">
+        <h1 class="title has-text-centered">New Participants Successfully Added</h1>
+        <div class="columns">
+            <div class="column">
+                <table class="table is-striped">
+                    <tr>
+                        <td>Title</td>
+                        <td>{{ participant.title }}</td>
+                    </tr>
+                    <tr>
+                        <td>First name</td>
+                        <td>{{ participant.firstname }}</td>
+                    </tr>
+                    <tr>
+                        <td>Last name</td>
+                        <td>{{ participant.lastname }}</td>
+                    </tr>
+                    <tr>
+                        <td>Email</td>
+                        <td>{{ participant.email }}</td>
+                    </tr>
+                    <tr>
+                        <td>Faculty</td>
+                        <td>{{ participant.faculty }}</td>
+                    </tr>
+                    <tr>
+                        <td>Affiliation</td>
+                        <td>{{ participant.affiliation }}</td>
+                    </tr>
+                    <tr>
+                        <td>Address</td>
+                        <td>{{ participant.delivery_address }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

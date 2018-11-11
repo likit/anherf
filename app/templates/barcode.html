@@ -3,9 +3,10 @@
 <div class="tabs">
     <ul>
         <li class=""><a href="/">Home</a></li>
-        <li class="is-active"><a>Scan Barcode</a></li>
+        <li class="is-active"><a href="{{ url_for('scan') }}">Scan Barcode</a></li>
         <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
-        <li class=""><a>Admin Page</a></li>
+        <li class=""><a href="/admin">Admin Page</a></li>
+        <li class=""><a href="{{ url_for('add_participant') }}">Add</a></li>
     </ul>
 </div>
 <section class="section">

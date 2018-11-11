@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import os
-from sys import stderr
+import datetime
 import click
+from sys import stderr
 import barcode
 from barcode.writer import ImageWriter
-import datetime
 from flask import (Flask, jsonify, render_template,
                     send_file, request, url_for, redirect)
 from flask_mail import Message, Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_admin import Admin
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, SelectField, BooleanField
 
 mail = Mail()
+admin = Admin()
 
 basedir =  os.path.dirname(os.path.abspath(__file__))
 qrimage_dir = os.path.join(basedir, 'qrimages')
@@ -25,12 +29,37 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anhperf_dev'
+app.config['SECRET_KEY'] = 'hegsenbiest'
 mail.init_app(app)
+admin.init_app(app)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 from .models import *
+
+from flask_admin.contrib.sqla import ModelView
+
+admin.add_view(ModelView(Participant,db.session))
+admin.add_view(ModelView(Registration,db.session))
+admin.add_view(ModelView(CheckIn, db.session))
+
+
+class ParticipantForm(FlaskForm):
+    email = StringField('Email')
+    title = StringField('Title')
+    firstname = StringField('First name')
+    lastname = StringField('Last name')
+    roles = [(str(r.id), r.desc) for r in Role.query.all()]
+    role = SelectField('Role', choices=roles)
+    affiliation = StringField('Affiliation')
+    faculty = StringField('Faculty')
+    mobile = StringField('mobile')
+    address = StringField('address')
+    payment_required = BooleanField()
+    pay_status = BooleanField('Paid')
+    submit = SubmitField('Submit')
+
 
 
 @app.route('/api/register/list')
@@ -39,10 +68,57 @@ def get_list_api():
     return jsonify(participants)
 
 
-@app.route('/register')
-def show_register():
+@app.route('/participant/add', methods=['GET', 'POST'])
+def add_participant():
+    form = ParticipantForm()
+    if form.validate_on_submit():
+        print('form is valid...')
+        title = form.title.data
+        firstname = form.firstname.data
+        lastname = form.lastname.data
+        email = form.email.data.lower()
+        faculty = form.faculty.data
+        affiliation = form.affiliation.data
+        address = form.address.data
+        role = Role.query.filter_by(id=int(form.role.data)).first()
+        pay_status = True if form.pay_status.data=='y' else False
+        payment_required = True if form.payment_required.data=='y' else False
+        registration = Registration(registered_at=datetime.datetime.utcnow(),
+                                    payment_required=payment_required,
+                                    pay_status=pay_status)
+        participant = Participant(title=title, firstname=firstname, lastname=lastname,
+                                  email=email, faculty=faculty, affiliation=affiliation,
+                                  delivery_address=address, role=role)
+        registration.participant = participant
+        db.session.add(participant)
+        db.session.add(registration)
+        db.session.commit()
+        return render_template('new_participant_added.html', participant=participant)
+    print(form.errors)
+    return render_template('new_participant.html', form=form)
+
+@app.route('/register/list')
+def list():
     participants = Participant.query.all()
     return render_template('list.html', plist=participants)
+
+
+@app.route('/register/scan')
+def scan():
+    rid = request.args.get('rid', None)
+    status = request.args.get('status', None)
+    if rid:
+        register = Registration.query.filter_by(id=int(rid)).first()
+    else:
+        register = None
+    return render_template('barcode.html', register=register, status=status)
+
+
+@app.route('/')
+@app.route('/register')
+def show_register():
+    # participants = Participant.query.all()
+    return render_template('index.html')
 
 
 @app.route('/register/mail')
@@ -140,13 +216,12 @@ def send_mail_payment_reminder():
 def pay(rid=None):
     if not rid:
         return jsonify({'message': 'No account ID specified'})
-    register = Registration.query.rilter(Registration.id==rid).first()
+    register = Registration.query.filter(Registration.id==rid).first()
     # participant can only check in a single time
-    if register.checked_at is None:
+    if register:
         register.pay_status = True
-        register.checked_at = datetime.datetime.utcnow()
-    db.session.add(register)
-    db.session.commit()
+        db.session.add(register)
+        db.session.commit()
     return redirect(request.referrer)
 
 
@@ -167,7 +242,11 @@ def checkin(rid=None):
             checkin.registration = register
             db.session.add(checkin)
             db.session.commit()
-        return redirect(request.referrer)
+            status = 'success'
+        else:
+            status = 'fail'
+        return redirect(url_for('scan',rid=register.id, status=status))
+    return redirect(url_for('scan'))
 
 
 def get_barcode(rid):

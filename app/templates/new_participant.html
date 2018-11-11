@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block page_content %}
+<div class="tabs">
+    <ul>
+        <li class=""><a href="/">Home</a></li>
+        <li class=""><a href="{{ url_for('scan') }}">Scan Barcode</a></li>
+        <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
+        <li class=""><a href="/admin">Admin Page</a></li>
+        <li class="is-active"><a>Add</a></li>
+    </ul>
+</div>
+<section class="section">
+    <div class="container">
+        <h1 class="title has-text-centered">New Participants</h1>
+        <form method="post" action="">
+            {{ form.hidden_tag() }}
+        <div class="columns">
+            <div class="column is-one-third is-offset-4">
+                <div class="box">
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.title(class='input', placeholder='Title') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.firstname(class='input is-danger', required=True, placeholder='Firstname') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.lastname(class='input is-danger', required=True, placeholder='Lastname') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    <div class="select">
+                                        {{ form.role() }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.email(class='input', type='email', placeholder='Email') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.faculty(class='input', placeholder='Faculty') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.affiliation(class='input', placeholder='Affiliation') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.address(class='input', placeholder='Delivery address') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.payment_required(value='y', checked=True) }}
+                                    {{ form.payment_required.label(class='checkbox') }}
+                                </div>
+                                <div class="control">
+                                    {{ form.pay_status(value='y') }}
+                                    {{ form.pay_status.label(class='checkbox') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns has-text-centered">
+                        <div class="column">
+                            <div class="field">
+                                <div class="control">
+                                    {{ form.submit(class='button is-primary') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
