@@ -4,7 +4,7 @@ from .models import Participant, Registration
 from .main import db
 
 def load(inputfile):
-    df = read_excel(inputfile)
+    df = read_excel(inputfile, sheet_name='Sheet2')
 
     for ix, row in df[['ID', 'user_email', 'user_registered', 'first_name',
                 'last_name', 'delivery_address', 'mobile', 'name_title',
