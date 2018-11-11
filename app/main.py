@@ -55,7 +55,7 @@ class ParticipantForm(FlaskForm):
     title = StringField('Title')
     firstname = StringField('First name')
     lastname = StringField('Last name')
-    role = SelectField('Role')
+    role = SelectField('Role', default="6")
     affiliation = StringField('Affiliation/Institute/University')
     faculty = StringField('Faculty/Department')
     mobile = StringField('Mobile')
@@ -76,9 +76,8 @@ def get_list_api():
 def add_participant():
     form = ParticipantForm()
     roles = [(str(role.id), role.desc) for role in Role.query.all()]
-    form.roles.choices = roles
+    form.role.choices = roles
     if form.validate_on_submit():
-        print('form is valid...')
         title = form.title.data
         firstname = form.firstname.data
         lastname = form.lastname.data
@@ -88,8 +87,9 @@ def add_participant():
         affiliation = form.affiliation.data
         address = form.address.data
         role = Role.query.filter_by(id=int(form.role.data)).first()
-        pay_status = True if form.pay_status.data=='y' else False
-        payment_required = True if form.payment_required.data=='y' else False
+        pay_status = True if 'pay_status' in request.form else False
+        payment_required = True if 'payment_required' in request.form else False
+        print(request.form)
         registration = Registration(registered_at=datetime.datetime.utcnow(),
                                     payment_required=payment_required,
                                     pay_status=pay_status)
@@ -100,7 +100,8 @@ def add_participant():
         db.session.add(participant)
         db.session.add(registration)
         db.session.commit()
-        return render_template('new_participant_added.html', participant=participant)
+        return render_template('new_participant_added.html', participant=participant,
+                               registration=registration)
     print(form.errors)
     return render_template('new_participant.html', form=form)
 
@@ -245,13 +246,23 @@ def checkin(rid=None):
         register = Registration.query.filter(Registration.id==trim_id).first()
         if (register.payment_required and register.pay_status) or \
                 (not register.payment_required):
-            checkin = CheckIn(checked_at=datetime.datetime.now(pytz.utc))
+            new_checked_date = datetime.datetime.now(pytz.utc)
+            checkin = CheckIn(checked_at=new_checked_date)
             checkin.registration = register
-            db.session.add(checkin)
-            db.session.commit()
-            status = 'success'
+            if len(register.checkins) > 1:
+                last_checked_date = register.checkins[-1].checked_at
+                if last_checked_date.date() != new_checked_date.date():
+                    db.session.add(checkin)
+                    db.session.commit()
+                    status = 'success'
+                else:
+                    status = 'repeated'
+            else:
+                db.session.add(checkin)
+                db.session.commit()
+                status = 'success'
         else:
-            status = 'fail'
+            status = 'unpaid'
         return redirect(url_for('scan',rid=register.id, status=status))
     return redirect(url_for('scan'))
 
