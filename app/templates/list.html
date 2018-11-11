@@ -53,7 +53,7 @@
                         <td>
                             {% if record.registers[-1].checkins %}
                                 {% for chk in record.registers[-1].checkins %}
-                                {{chk}},
+                                {{chk.checked_at|timezoned}},
                                 {% endfor %}
                             {% endif %}
                         </td>

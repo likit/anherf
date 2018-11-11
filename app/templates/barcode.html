@@ -89,7 +89,7 @@
                     {% for chk in register.checkins|reverse %}
                         <tr>
                             <td>{{ loop.index }}</td>
-                            <td>{{ chk.checked_at }}</td>
+                            <td>{{ chk.checked_at | timezoned }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
