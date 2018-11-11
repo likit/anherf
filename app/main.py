@@ -50,12 +50,11 @@ class ParticipantForm(FlaskForm):
     title = StringField('Title')
     firstname = StringField('First name')
     lastname = StringField('Last name')
-    roles = [(str(r.id), r.desc) for r in Role.query.all()]
-    role = SelectField('Role', choices=roles)
-    affiliation = StringField('Affiliation')
-    faculty = StringField('Faculty')
-    mobile = StringField('mobile')
-    address = StringField('address')
+    role = SelectField('Role')
+    affiliation = StringField('Affiliation/Institute/University')
+    faculty = StringField('Faculty/Department')
+    mobile = StringField('Mobile')
+    address = StringField('Address')
     payment_required = BooleanField()
     pay_status = BooleanField('Paid')
     submit = SubmitField('Submit')
@@ -71,6 +70,8 @@ def get_list_api():
 @app.route('/participant/add', methods=['GET', 'POST'])
 def add_participant():
     form = ParticipantForm()
+    roles = [(str(role.id), role.desc) for role in Role.query.all()]
+    form.roles.choices = roles
     if form.validate_on_submit():
         print('form is valid...')
         title = form.title.data
