@@ -5,6 +5,7 @@ import datetime
 import click
 from sys import stderr
 import barcode
+import pytz
 from barcode.writer import ImageWriter
 from flask import (Flask, jsonify, render_template,
                     send_file, request, url_for, redirect)
@@ -44,6 +45,10 @@ admin.add_view(ModelView(Participant,db.session))
 admin.add_view(ModelView(Registration,db.session))
 admin.add_view(ModelView(CheckIn, db.session))
 
+def timezoned(value):
+    return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d-%m-%Y %H:%m:%S')
+
+app.jinja_env.filters['timezoned'] = timezoned
 
 class ParticipantForm(FlaskForm):
     email = StringField('Email')
@@ -240,7 +245,7 @@ def checkin(rid=None):
         register = Registration.query.filter(Registration.id==trim_id).first()
         if (register.payment_required and register.pay_status) or \
                 (not register.payment_required):
-            checkin = CheckIn(checked_at=datetime.datetime.utcnow())
+            checkin = CheckIn(checked_at=datetime.datetime.now(pytz.utc))
             checkin.registration = register
             db.session.add(checkin)
             db.session.commit()
