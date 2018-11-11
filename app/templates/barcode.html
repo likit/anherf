@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block page_content %}
+<div class="tabs">
+    <ul>
+        <li class=""><a href="/">Home</a></li>
+        <li class="is-active"><a>Scan Barcode</a></li>
+        <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
+        <li class=""><a>Admin Page</a></li>
+    </ul>
+</div>
+<section class="section">
+    <div class="container">
+        <div class="box">
+        <div class="has-text-centered">
+            <span class="icon is-large">
+                <i class="fas fa-barcode fa-4x"></i>
+            </span><br>
+            <h1 class="title">Barcode Scan</h1>
+        </div>
+        <br>
+        <div class="columns">
+            <div class="column is-half is-offset-3">
+                <div class="field">
+                    <div class="control">
+                        <input class="input is-rounded is-medium is-danger" type="text" data-bind="textInput: barcode"
+                               placeholder="Scan barcode or enter the registration code"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            {% if register %}
+            {% if status=='success' %}
+            <div class="column has-text-centered">
+                <span class="icon is-large">
+                    <i class="fas fa-check-circle has-text-success fa-3x"></i>
+                </span><br>
+                <span class="subtitle">Succeeded!</span>
+            </div>
+            {% else %}
+            <div class="column has-text-centered">
+                <span class="icon is-large">
+                    <i class="fas fa-times-circle has-text-danger fa-3x"></i>
+                </span><br>
+                <span class="subtitle">Failed!</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="columns">
+            <div class="column is-offset-2">
+                <table class="table is-narrow">
+                    <thead>
+                        <th>Barcode</th>
+                        <th>Title</th>
+                        <th>First name</th>
+                        <th>Last name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Registered at</th>
+                        <th>Payment status</th>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ '{}{:05}'.format(2018,register.id) }}</td>
+                            <td>{{ register.participant.title }}</td>
+                            <td>{{ register.participant.firstname }}</td>
+                            <td>{{ register.participant.lastname }}</td>
+                            <td>{{ register.participant.email }}</td>
+                            <td>{{ register.participant.role.desc }}</td>
+                            <td>{{ register.registered_at }}</td>
+                            {% if not register.payment_required or register.pay_status %}
+                            <td><i class="far fa-thumbs-up has-text-success"></i></td>
+                            {% else %}
+                                {% if not register.pay_status %}
+                                <td><a class="button is-outlined is-rounded is-danger"
+                                       href="{{ url_for('pay', rid=register.id) }}">Pay</a></td>
+                                {% endif %}
+                            {% endif %}
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="table is-narrow">
+                    <col width="10">
+                    <thead>
+                        <th colspan="2">Check-in History</th>
+                    </thead>
+                    <tbody>
+                    {% for chk in register.checkins|reverse %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ chk.checked_at }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</section>
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script>
+    var ViewModel = function () {
+        var self = this;
+        self.barcode = ko.observable();
+        self.barcode.subscribe(function (value) {
+            if (value.length === 9) {
+                window.location.href = "/checkin/" + value;
+            }
+        });
+    }
+    var vm = new ViewModel();
+    ko.applyBindings(vm);
+</script>
+{% endblock %}

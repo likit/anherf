@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 {% block page_content %}
+<div class="tabs">
+    <ul>
+        <li class=""><a href="/">Home</a></li>
+        <li class=""><a href="{{ url_for('scan') }}">Scan Barcode</a></li>
+        <li class="is-active"><a>Participants</a></li>
+        <li class=""><a>Admin Page</a></li>
+    </ul>
+</div>
 <section class="section">
     <div class="container">
-        <h1 class="title">ANHPERF Registration System</h1>
-        <div class="columns">
-            <div class="column is-half">
-                <div class="field">
-                    <div class="control">
-                        <input class="input is-rounded is-medium is-danger" type="text" data-bind="textInput: barcode"
-                               placeholder="Scan barcode or enter registration code"/>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <h1 class="title has-text-centered">Participants</h1>
         <div class="columns">
             <div class="column">
                 <table class="stripe" id="myTable">
