@@ -78,6 +78,7 @@ def add_participant():
         firstname = form.firstname.data
         lastname = form.lastname.data
         email = form.email.data.lower()
+        mobile = form.mobile.data
         faculty = form.faculty.data
         affiliation = form.affiliation.data
         address = form.address.data
@@ -89,7 +90,7 @@ def add_participant():
                                     pay_status=pay_status)
         participant = Participant(title=title, firstname=firstname, lastname=lastname,
                                   email=email, faculty=faculty, affiliation=affiliation,
-                                  delivery_address=address, role=role)
+                                  delivery_address=address, role=role, mobile=mobile)
         registration.participant = participant
         db.session.add(participant)
         db.session.add(registration)
