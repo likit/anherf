@@ -47,4 +47,7 @@ class Role(db.Model):
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     desc = Column('desc', String())
 
+    def __repr__(self):
+        return self.desc.title()
+
 
