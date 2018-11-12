@@ -46,7 +46,7 @@ admin.add_view(ModelView(Registration,db.session))
 admin.add_view(ModelView(CheckIn, db.session))
 
 def timezoned(value):
-    return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d-%m-%Y %H:%m:%S')
+    return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d-%m-%Y %H:%M:%S')
 
 app.jinja_env.filters['timezoned'] = timezoned
 
