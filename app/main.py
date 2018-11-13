@@ -16,6 +16,8 @@ from flask_admin import Admin
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, BooleanField
 
+bnk = pytz.timezone('Asia/Bangkok')
+
 mail = Mail()
 admin = Admin()
 
@@ -249,18 +251,9 @@ def checkin(rid=None):
             new_checked_date = datetime.datetime.now(pytz.utc)
             checkin = CheckIn(checked_at=new_checked_date)
             checkin.registration = register
-            if len(register.checkins) > 1:
-                last_checked_date = register.checkins[-1].checked_at
-                if last_checked_date.date() != new_checked_date.date():
-                    db.session.add(checkin)
-                    db.session.commit()
-                    status = 'success'
-                else:
-                    status = 'repeated'
-            else:
-                db.session.add(checkin)
-                db.session.commit()
-                status = 'success'
+            db.session.add(checkin)
+            db.session.commit()
+            status = 'success'
         else:
             status = 'unpaid'
         return redirect(url_for('scan',rid=register.id, status=status))
