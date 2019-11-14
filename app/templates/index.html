@@ -3,53 +3,73 @@
 <div class="tabs">
     <ul>
         <li class="is-active"><a href="/">Home</a></li>
-        <li class=""><a href="{{ url_for('scan') }}">Scan Barcode</a></li>
+        <li class=""><a href="{{ url_for('scan') }}">Check In</a></li>
         <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
+        <li class=""><a href="{{ url_for('add_participant') }}">Register</a></li>
         <li class=""><a href="/admin">Admin Page</a></li>
-        <li class=""><a href="{{ url_for('add_participant') }}">Add</a></li>
     </ul>
 </div>
 <section class="section">
     <div class="container">
-        <h1 class="title has-text-centered">ANHPERF Registration System</h1>
+        <h1 class="title has-text-centered has-text-info">ANHPERF Registration System</h1>
         <div class="columns">
             <div class="column is-one-fourth">
                 <div class="box has-text-centered">
-                    <span class="icon is-large has-text-success">
-                        <i class="fas fa-barcode fa-3x"></i>
-                    </span>
-                    <br>
-                    <a href="{{ url_for('scan') }}" class="title is-size-4 has-text-success">Scan Barcode</a>
+                    <a href="{{ url_for('scan') }}" class="title is-size-4">
+                        <span class="icon is-large">
+                            <i class="fas fa-barcode fa-2x"></i>
+                        </span>
+                        <br>
+                        <span>Check In</span>
+                    </a><br>แสกน barcode เพื่อลงทะเบียนเข้างาน
                 </div>
             </div>
             <div class="column is-one-fourth">
                 <div class="box has-text-centered">
-                    <span class="icon is-large has-text-primary">
-                        <i class="far fa-address-book fa-3x"></i>
-                    </span>
-                    <br>
-                    <a href="{{url_for('list')}}" class="title is-size-4 has-text-primary">Participant List</a>
+                    <a href="{{url_for('list')}}" class="title is-size-4">
+                        <span class="icon is-large">
+                            <i class="far fa-address-book fa-2x"></i>
+                        </span>
+                        <br>
+                        <span>Participants</span>
+                    </a><br>รายชื่อผู้เข้าร่วมงานประชุม
                 </div>
             </div>
             <div class="column is-one-fourth">
                 <div class="box has-text-centered">
-                    <span class="icon is-large">
-                        <i class="fas fa-user-plus fa-3x"></i>
-                    </span>
-                    <br>
-                    <a href="{{ url_for('add_participant') }}" class="title is-size-4">Add Participant</a>
+                    <a href="{{ url_for('add_participant') }}" class="title is-size-4">
+                        <span class="icon is-large">
+                            <i class="fas fa-user-plus fa-2x"></i>
+                        </span>
+                        <br>
+                        <span>Register</span>
+                    </a><br>ลงทะเบียนผู้เข้าร่วมงานใหม่
                 </div>
             </div>
             <div class="column is-one-fourth">
                 <div class="box has-text-centered">
-                    <span class="icon is-large has-text-danger">
-                        <i class="fas fa-cogs fa-3x"></i>
-                    </span>
-                    <br>
-                    <a href="/admin" class="title is-size-4 has-text-danger">Admin page</a>
+                    <a href="/admin" class="title is-size-4">
+                        <span class="icon is-large">
+                            <i class="fas fa-cogs fa-2x"></i>
+                        </span>
+                        <br>
+                        <span>Admin page</span>
+                    </a><br>หน้าสำหรับผู้ดูแลระบบ
                 </div>
             </div>
         </div>
     </div>
+</section>
+<section>
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                The website is developed and maintained by Jetsweep Technology.
+            </p>
+            <p>
+                &copy; 2019 Jetsweep.net.
+            </p>
+        </div>
+    </footer>
 </section>
 {% endblock page_content %}

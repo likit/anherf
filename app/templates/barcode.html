@@ -3,10 +3,10 @@
 <div class="tabs">
     <ul>
         <li class=""><a href="/">Home</a></li>
-        <li class="is-active"><a href="{{ url_for('scan') }}">Scan Barcode</a></li>
+        <li class="is-active"><a href="{{ url_for('scan') }}">Check In</a></li>
         <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
+        <li class=""><a href="{{ url_for('add_participant') }}">Register</a></li>
         <li class=""><a href="/admin">Admin Page</a></li>
-        <li class=""><a href="{{ url_for('add_participant') }}">Add</a></li>
     </ul>
 </div>
 <section class="section">
@@ -69,7 +69,7 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>{{ '{}{:05}'.format(2018,register.id) }}</td>
+                            <td>{{ '{}{:05}'.format(2019,register.id) }}</td>
                             <td>{{ register.participant.title }}</td>
                             <td>{{ register.participant.firstname }}</td>
                             <td>{{ register.participant.lastname }}</td>
