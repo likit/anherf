@@ -15,9 +15,14 @@ class Participant(db.Model):
     mobile = Column('mobile', String(), nullable=True)
     delivery_address = Column('delivery_address', String(), nullable=True)
     position_type = Column('position_type', String(), nullable=True)
-    registers = relationship('Registration', backref="participant")
+    # registers = relationship('Registration', backref="participant")
     role_id = Column('role_id', Integer(), ForeignKey('roles.id'))
     role = relationship('Role', backref='participants')
+
+
+    @property
+    def fullname(self):
+        return u'{}{} {}'.format(self.title, self.firstname, self.lastname)
 
 
 class Registration(db.Model):
@@ -26,6 +31,7 @@ class Registration(db.Model):
     regcode = Column('regcode', String(16), unique=True)
     registered_at = Column('registered_at', DateTime(timezone=True))
     participant_id = Column('participant_id', ForeignKey('participants.id'))
+    participant = db.relationship('Participant', backref=backref('registers'))
     payment_required = Column('payment_required', Boolean(), default=False)
     pay_status = Column('pay_status', Boolean(), default=False)
     paid_on = Column('paid_on', Date(), nullable=True)
