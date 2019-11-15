@@ -5,6 +5,8 @@ import datetime
 import click
 from sys import stderr
 import barcode
+import pandas as pd
+import numpy as np
 import pytz
 from barcode.writer import ImageWriter
 from flask import (Flask, jsonify, render_template,
@@ -52,7 +54,7 @@ admin.add_view(ModelView(Role, db.session))
 
 
 def timezoned(value):
-    return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d-%m-%Y %H:%M:%S')
+    return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d %b %Y, %H:%M:%S')
 
 app.jinja_env.filters['timezoned'] = timezoned
 
@@ -131,8 +133,28 @@ def scan():
 @app.route('/')
 @app.route('/register')
 def show_register():
-    # participants = Participant.query.all()
-    return render_template('index.html')
+    checkins = CheckIn.query.all()
+    all_regs_count = Registration.query.count()
+    data = []
+    for chk in checkins:
+        data.append([
+            chk.registration.participant.id,
+            chk.registration.participant.role.desc,
+            chk.checked_at.date(),
+        ])
+
+    df = pd.DataFrame(data, columns=['pid', 'role', 'checkin_date'])
+    df = df.drop_duplicates('pid')
+    summary = df.groupby('role').checkin_date.count()
+    summary = summary.apply(int)
+    last_checkin = checkins[-1]
+    print(summary)
+    return render_template('index.html',
+                           checkins=checkins,
+                           summary=summary,
+                           last_checkin=last_checkin,
+                           all_regs_count=all_regs_count,
+                           )
 
 
 @app.route('/register/mail')
@@ -279,6 +301,7 @@ from .load_data import load
 @click.argument('inputfile')
 def load_data(inputfile):
     load(inputfile)
+
 
 @app.cli.command()
 @click.argument('id')

@@ -61,6 +61,40 @@
     </div>
 </section>
 <section>
+    <div class="container has-text-centered">
+        <h1 class="title is-size-4">Statistics</h1>
+        <div class="box">
+            <table class="table is-striped is-fullwidth">
+                <thead>
+                    <th>กลุ่ม</th>
+                    <th>จำนวนที่ลงทะเบียนเข้างานแล้ว</th>
+                </thead>
+                <tbody>
+                    {% for key in summary.index %}
+                    <tr>
+                        <td>{{ key }}</td>
+                        <td>{{ summary[key] }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td>{{ summary.sum() }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Percent</strong></td>
+                        <td>{{ summary.sum()/all_regs_count*100 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <span class="icon">
+                <i class="fas fa-history"></i>
+            </span>
+            <span>Last check-in {{ last_checkin.checked_at|timezoned }}</span>
+        </div>
+    </div>
+</section>
+<br>
+<section>
     <footer class="footer">
         <div class="content has-text-centered">
             <p>
