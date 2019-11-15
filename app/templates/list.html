@@ -28,7 +28,7 @@
                     <tbody>
                     {% for record in plist %}
                     <tr>
-                        <td>{{ '{}{:05}'.format(2018,record.registers[-1].id) }}</td>
+                        <td>{{ '{}{:05}'.format(year,record.registers[-1].id) }}</td>
                         <td>
                             {% if record.title %}
                             {{record.title}}

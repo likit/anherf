@@ -17,6 +17,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, BooleanField
 
 bnk = pytz.timezone('Asia/Bangkok')
+YEAR = 2019
+SENDER = 'anhperf.conference@gmail.com'
 
 mail = Mail()
 admin = Admin()
@@ -27,12 +29,12 @@ qrimage_dir = os.path.join(basedir, 'qrimages')
 app = Flask(__name__)
 app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_USERNAME'] = 'anhperf.conference@gmail.com'
+app.config['MAIL_USERNAME'] = SENDER
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anhperf_dev'
-app.config['SECRET_KEY'] = 'hegsenbiest'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 mail.init_app(app)
 admin.init_app(app)
 
@@ -46,6 +48,8 @@ from flask_admin.contrib.sqla import ModelView
 admin.add_view(ModelView(Participant,db.session))
 admin.add_view(ModelView(Registration,db.session))
 admin.add_view(ModelView(CheckIn, db.session))
+admin.add_view(ModelView(Role, db.session))
+
 
 def timezoned(value):
     return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d-%m-%Y %H:%M:%S')
@@ -110,7 +114,7 @@ def add_participant():
 @app.route('/register/list')
 def list():
     participants = Participant.query.all()
-    return render_template('list.html', plist=participants)
+    return render_template('list.html', plist=participants, year=YEAR)
 
 
 @app.route('/register/scan')
@@ -182,7 +186,7 @@ def send_mail_barcode(rid=None,role=None):
             with app.open_resource("templates/committee_mail.html") as template_fp:
                 content = template_fp.read().decode('utf-8').replace('*****', name)
 
-            msg = Message(subject='Welcome to the 5th Annual Health National Professional Reform Forum (ANHPERF 2018)',
+            msg = Message(subject='Welcome to the 5th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
                           sender="healthprofessionals21@gmail.com",
                           body=content,
                           recipients=[recp.email],
@@ -211,8 +215,8 @@ def send_mail_payment_reminder():
 
     with mail.connect() as conn:
         for recp in recp_mails[1:]:
-            msg = Message(subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF 2018)',
-                            sender="healthprofessionals21@gmail.com",
+            msg = Message(subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
+                            sender=SENDER,
                             body=content,
                             recipients=[recp],
                             cc=['likit.pre@mahidol.edu'])
@@ -262,7 +266,7 @@ def checkin(rid=None):
 
 def get_barcode(rid):
     EAN = barcode.get_barcode_class('code128')
-    ean = EAN(u'2018{:05}'.format(int(rid)), writer=ImageWriter())
+    ean = EAN(u'{}{:05}'.format(YEAR, int(rid)), writer=ImageWriter())
     imgname = ean.save('{}/{}'.format(qrimage_dir, rid))
     fp = open('{}'.format(imgname), 'wb')
     ean.write(fp)
