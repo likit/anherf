@@ -147,7 +147,10 @@ def show_register():
     df = df.drop_duplicates('pid')
     summary = df.groupby('role').checkin_date.count()
     summary = summary.apply(int)
-    last_checkin = checkins[-1]
+    if checkins:
+        last_checkin = checkins[-1]
+    else:
+        last_checkin = None
     print(summary)
     return render_template('index.html',
                            checkins=checkins,
