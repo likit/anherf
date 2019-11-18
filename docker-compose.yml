@@ -13,6 +13,7 @@ services:
     environment:
       - FLASK_APP=/app/main.py
       - FLASK_DEBUG
+      - SECRET_KEY
       - MAIL_PASSWORD
     volumes:
       - ./app:/app
