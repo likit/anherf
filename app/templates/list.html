@@ -17,10 +17,10 @@
                 <table class="stripe" id="myTable">
                     <thead>
                     <th>Registration No.</th>
-                    <th>Title</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Affiliation</th>
+                    <th>Badge</th>
                     <th>Payment</th>
                     <th>Checked-in time</th>
                     <th>Manual check in</th>
@@ -30,16 +30,11 @@
                     <tr>
                         <td>{{ '{}{:05}'.format(year,record.registers[-1].id) }}</td>
                         <td>
-                            {% if record.title %}
-                            {{record.title}}
-                            {% else %}
-                            {% endif %}
-                        </td>
-                        <td>
-                            {{ record.firstname }} {{ record.lastname }}
+                            {{ record.fullname }}
                         </td>
                         <td>{{ record.email }}</td>
-                        <td>{{record.faculty}} {{ record.affiliation }}</td>
+                        <td>{{ record.affiliation }}</td>
+                        <td>{{ record.role.desc }}</td>
                         {% if not record.registers[-1].payment_required or record.registers[-1].pay_status %}
                         <td><i class="far fa-thumbs-up has-text-success"></i></td>
                         {% else %}
@@ -95,7 +90,7 @@
 <script>
     $(document).ready(function () {
         $('#myTable').DataTable({
-            'pageLength': 1000,
+            'pageLength': 40,
         });
     });
 </script>
