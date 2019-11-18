@@ -1,29 +1,41 @@
 from datetime import datetime
 from pandas import read_excel
-from .models import Participant, Registration
+from .models import Participant, Registration, Role
 from .main import db
 
-def load(inputfile):
-    df = read_excel(inputfile, sheet_name='Sheet2')
+def load(inputfile, sheetname=None):
+    df = read_excel(inputfile)
+    print(df.head())
 
-    for ix, row in df[['ID', 'user_email', 'user_registered', 'first_name',
-                'last_name', 'delivery_address', 'mobile', 'name_title',
-                'faculty', 'university', 'original_affiliation_institute']].iterrows():
+    for ix, row in df[['user_email', 'Timestamp', 'firstname',
+                       'lastname', 'delivery_address', 'mobile', 'name_title',
+                       'faculty', 'original_affiliation_institute',
+                       'department', 'officephone', 'fax', 'profession', 'position',
+                       'badge', 'attend_as',
+                       ]].iterrows():
         participant = Participant(
-            id=int(row['ID']),
             title=row['name_title'],
-            firstname=row['first_name'],
-            lastname=row['last_name'],
+            firstname=row['firstname'],
+            lastname=row['lastname'],
             delivery_address=row['delivery_address'],
             mobile=row['mobile'],
             email=row['user_email'],
             faculty=row['faculty'],
+            profession=row['profession'],
+            position_type=row['position'],
             affiliation=row['original_affiliation_institute'],
+            department=row['department'],
+            officephone=row['officephone'],
+            attend_as=row['attend_as'],
+            fax=row['fax'],
         )
+        role = Role.query.filter_by(desc=row['badge']).first()
+        participant.role = role
         db.session.add(participant)
         reg = Registration(
-            registered_at=datetime.strptime(row['user_registered'], '%Y-%m-%d %H:%M:%S'),
-            checked_at=None,
+            # registered_at=datetime.strptime(row['Timestamp'], '%Y-%m-%d %H:%M:%S'),
+            registered_at=row['Timestamp'],
+            badge=row['badge'],
         )
         db.session.add(reg)
         participant.registers.append(reg)

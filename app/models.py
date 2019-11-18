@@ -19,9 +19,9 @@ class Participant(db.Model):
     delivery_address = Column('delivery_address', String(), nullable=True)
     position_type = Column('position_type', String(), nullable=True)
     profession = Column('profession', String(), nullable=True)
-    # registers = relationship('Registration', backref="participant")
     role_id = Column('role_id', Integer(), ForeignKey('roles.id'))
     role = relationship('Role', backref='participants')
+    attend_as = Column('attend_as', String())
 
 
     @property
