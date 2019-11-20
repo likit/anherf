@@ -26,7 +26,7 @@ mail = Mail()
 admin = Admin()
 
 basedir =  os.path.dirname(os.path.abspath(__file__))
-qrimage_dir = os.path.join(basedir, 'qrimages')
+qrimage_dir = os.path.join(basedir, 'static/barcodes')
 
 app = Flask(__name__)
 app.config['MAIL_DEBUG'] = True
@@ -290,6 +290,9 @@ def checkin(rid=None):
 
 
 def get_barcode(rid):
+    if not os.path.exists(qrimage_dir):
+        os.mkdir(qrimage_dir)
+
     EAN = barcode.get_barcode_class('code128')
     ean = EAN(u'{}{:05}'.format(YEAR, int(rid)), writer=ImageWriter())
     imgname = ean.save('{}/{}'.format(qrimage_dir, rid))
@@ -307,9 +310,9 @@ def load_data(inputfile):
 
 
 @app.cli.command()
-@click.argument('id')
-def gen_barcode(id):
-    if id == 'all':
+@click.argument('id', required=False)
+def gen_barcode(id=None):
+    if id is None:
         for reg in Registration.query.all():
             get_barcode(reg.id)
             print('Barcode for {} has been generated...'.format(reg.id))
