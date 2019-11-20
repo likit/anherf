@@ -20,7 +20,7 @@ from wtforms import StringField, SubmitField, SelectField, BooleanField
 
 bnk = pytz.timezone('Asia/Bangkok')
 YEAR = 2019
-SENDER = 'anhperf.conference@gmail.com'
+SENDER = 'likit.pre@mahidol.edu'
 
 mail = Mail()
 admin = Admin()
@@ -34,6 +34,7 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_USERNAME'] = SENDER
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
+app.config['SERVER_NAME'] = 'http://localhost'
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anhperf_dev'
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -184,10 +185,15 @@ def send_mail(rid=None, recp_mail=None):
         return 'The mail has been sent.'
 
 
+@app.route('/html/message/<int:rid>')
+def display_html_message(rid):
+    register = Registration.query.get(rid)
+    return render_template('message.html', register=register)
+
+
 @app.cli.command()
 @click.argument('rid')
 def send_mail_barcode(rid=None,role=None):
-
     if rid:
         reg = Registration.query.filter_by(id=rid).first()
         participants = [reg.participant]
@@ -204,21 +210,19 @@ def send_mail_barcode(rid=None,role=None):
 
     with mail.connect() as conn:
         for recp in participants:
-            name = '{} {} {}'.format(recp.title,
-                                     recp.firstname,
-                                     recp.lastname)
+            with app.open_resource("templates/message.txt") as template_fp:
+                content = template_fp.read().decode('utf-8')
 
-            with app.open_resource("templates/committee_mail.html") as template_fp:
-                content = template_fp.read().decode('utf-8').replace('*****', name)
-
-            msg = Message(subject='Welcome to the 5th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
+            msg = Message(subject='Welcome to the 6th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
                           sender="healthprofessionals21@gmail.com",
                           body=content,
-                          recipients=[recp.email],
+                          recipients=['likit.pre@mahidol.edu'],
+                          #recipients=[recp.email],
                           cc=['likit.pre@mahidol.edu'])
             rid = recp.registers[-1].id
             with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
                 msg.attach("{}.png".format(rid), "image/png", fp.read())
+                msg.html = render_template('message.html', register=recp.registers[-1])
             try:
                 conn.send(msg)
             except:
