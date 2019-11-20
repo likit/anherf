@@ -167,7 +167,7 @@ def send_mail(rid=None, recp_mail=None):
         recp_mail = request.args.get('email')
 
     msg = Message('Welcome to ANHPERF conference.',
-                  sender="likit.pre@mahidol.edu",
+                  sender=SENDER,
                   recipients=[recp_mail])
 
     if not os.path.exists(os.path.join(qrimage_dir, '{}.png'.format(rid))):
@@ -213,7 +213,7 @@ def send_mail_barcode(rid=None,role=None):
                 content = template_fp.read().decode('utf-8')
 
             msg = Message(subject='Welcome to the 6th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
-                          sender="healthprofessionals21@gmail.com",
+                          sender=SENDER,
                           body=content,
                           recipients=['likit.pre@mahidol.edu'],
                           #recipients=[recp.email],
