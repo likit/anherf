@@ -32,7 +32,7 @@
         </article>
         <div>
             <figure>
-                <img src="{{ 'http://66.183.177.166/static/barcodes/{}.png'.format(register.id) }}">
+                <img src="{{ url_for('static', filename='barcodes/{}.png'.format(register.id)) }}">
             </figure>
         </div>
         <article>
