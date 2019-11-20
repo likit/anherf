@@ -3,6 +3,7 @@
 import os
 import datetime
 import click
+import time
 from sys import stderr
 import barcode
 import pandas as pd
@@ -191,11 +192,14 @@ def display_html_message(rid):
 
 
 @app.cli.command()
-@click.argument('rid')
+@click.argument('rid', required=False)
 def send_mail_barcode(rid=None,role=None):
     if rid:
         reg = Registration.query.filter_by(id=rid).first()
         participants = [reg.participant]
+    else:
+        participants = [p for p in Participant.query.all() if p.email != '']
+    '''
     else:
         role = 'invitee'
         participants = []
@@ -204,7 +208,7 @@ def send_mail_barcode(rid=None,role=None):
             if p.role.desc == role and p.email:
                 print(p.id, p.email, p.title, p.firstname, p.lastname, p.registers[-1].id, p.role.desc)
                 participants.append(p)
-
+    '''
     errors = []
 
     with mail.connect() as conn:
@@ -215,8 +219,8 @@ def send_mail_barcode(rid=None,role=None):
             msg = Message(subject='Welcome to the 6th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
                           sender=SENDER,
                           body=content,
-                          recipients=['likit.pre@mahidol.edu'],
-                          #recipients=[recp.email],
+                          #recipients=['likit.pre@mahidol.edu'],
+                          recipients=[recp.email],
                           cc=['likit.pre@mahidol.edu'])
             rid = recp.registers[-1].id
             with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
@@ -226,8 +230,14 @@ def send_mail_barcode(rid=None,role=None):
                 conn.send(msg)
             except:
                 errors.append(recp)
-    for e in errors:
-        print(e.email, e.firstname, e.lastname, e.id)
+            else:
+                print('Sent to {}, {}, {}'.format(
+                    recp.email, recp.fullname, recp.id))
+            time.sleep(2)
+    if errors:
+        print('==========>Failed to send to the following:')
+        for e in errors:
+            print(e.email, e.firstname, e.lastname, e.id)
 
 
 @app.cli.command()
