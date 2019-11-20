@@ -34,7 +34,6 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_USERNAME'] = SENDER
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
-app.config['SERVER_NAME'] = 'http://localhost'
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anhperf_dev'
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
