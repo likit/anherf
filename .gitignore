@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+static/
 env/
 build/
 develop-eggs/
@@ -99,3 +100,13 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Excel
+*.xlsx
+*.xls
+
+# Doc
+*.docx
+
+.DS_Store
+.idea/
