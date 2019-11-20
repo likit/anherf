@@ -5,7 +5,8 @@ from .main import db
 
 def load(inputfile, sheetname=None):
     df = read_excel(inputfile)
-    print(df.head())
+    # deal with participants with no email addresses.
+    df = df.fillna('')
 
     for ix, row in df[['user_email', 'Timestamp', 'firstname',
                        'lastname', 'delivery_address', 'mobile', 'name_title',
@@ -29,7 +30,7 @@ def load(inputfile, sheetname=None):
             attend_as=row['attend_as'],
             fax=row['fax'],
         )
-        role = Role.query.filter_by(desc=row['badge']).first()
+        role = Role.query.filter_by(desc=row['badge'].strip()).first()
         participant.role = role
         db.session.add(participant)
         reg = Registration(
