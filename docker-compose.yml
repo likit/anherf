@@ -9,7 +9,7 @@ services:
       - "5436:5432"
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:5000 app.main:app
+    command: gunicorn --workers=5 --threads=12 --bind 0.0.0.0:5000 app.main:app
     environment:
       - FLASK_APP=/app/main.py
       - FLASK_DEBUG
