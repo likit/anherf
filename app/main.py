@@ -134,15 +134,17 @@ def scan():
 @app.route('/')
 @app.route('/register')
 def show_register():
+    today = datetime.datetime.now().date()
     checkins = CheckIn.query.all()
     all_regs_count = Registration.query.count()
     data = []
     for chk in checkins:
-        data.append([
-            chk.registration.participant.id,
-            chk.registration.participant.role.desc,
-            chk.checked_at.date(),
-        ])
+        if chk.checked_at.date() == today:
+            data.append([
+                chk.registration.participant.id,
+                chk.registration.participant.role.desc,
+                chk.checked_at.date(),
+            ])
 
     df = pd.DataFrame(data, columns=['pid', 'role', 'checkin_date'])
     df = df.drop_duplicates('pid')
