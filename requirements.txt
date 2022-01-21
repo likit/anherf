@@ -18,7 +18,7 @@ gunicorn==19.9.0
 infinity==1.4
 intervals==0.8.1
 ipykernel==5.0.0
-ipython==7.0.1
+ipython==7.16.3
 ipython-genutils==0.2.0
 itsdangerous==0.24
 jedi==0.13.1
