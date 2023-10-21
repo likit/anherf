@@ -1,20 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Title</title>
-  <link rel="stylesheet" href="{{url_for('static', filename='css/bulmaswatch.min.css')}}">
-  <link rel="stylesheet" href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Title</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bulmaswatch.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bulma.min.css">
 </head>
 <body>
-  {% block page_content %}
-  {% endblock %}
-  {% block scripts %}
-    <script src="{{url_for('static', filename='js/jquery-3.3.1.min.js')}}"></script>
-    <script src="{{url_for('static', filename='js/knockout-3.4.2.js')}}"></script>
+{% block page_content %}
+{% endblock %}
+{% block footer %}
+    <div class="footer">
+        <div class="container">
+            <div class="content has-text-centered">
+                {% if config['DEBUG'] %}
+                    <article class="message is-warning">
+                        <div class="message-header">
+                            DEBUG MODE Only
+                        </div>
+                        <div class="message-body">
+                            <strong>Template file:</strong> {{ self._TemplateReference__context.name }}
+                        </div>
+                    </article>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
     <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
-    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-  {% endblock %}
+    <script src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="//cdn.datatables.net/1.13.6/js/dataTables.bulma.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.6.1"
+            integrity="sha384-tvG/2mnCFmGQzYC1Oh3qxQ7CkQ9kMzYjWZSNtrRZygHPDDqottzEJsqS4oUVodhW"
+            crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded',
+            () => {
+                (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                    const $notification = $delete.parentNode;
+
+                    $delete.addEventListener('click', () => {
+                        $notification.parentNode.removeChild($notification);
+                    });
+                });
+            })
+    </script>
+{% endblock %}
 </body>
 </html>

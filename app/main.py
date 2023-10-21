@@ -2,31 +2,35 @@
 
 import os
 import datetime
+import gspread
+import arrow
 import click
 import time
-from sys import stderr
-import barcode
 import pandas as pd
-import numpy as np
+from sys import stderr
+# import barcode
 import pytz
-from barcode.writer import ImageWriter
+# from barcode.writer import ImageWriter
 from flask import (Flask, jsonify, render_template,
-                    send_file, request, url_for, redirect)
+                   send_file, request, url_for, redirect, flash, make_response)
 from flask_mail import Message, Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, BooleanField
+from dotenv import load_dotenv
 
-bnk = pytz.timezone('Asia/Bangkok')
-YEAR = 2019
+load_dotenv()
+
+bangkok = pytz.timezone('Asia/Bangkok')
+YEAR = arrow.now(tz=bangkok).date()
 SENDER = 'likit.pre@mahidol.edu'
 
 mail = Mail()
 admin = Admin()
 
-basedir =  os.path.dirname(os.path.abspath(__file__))
+basedir = os.path.dirname(os.path.abspath(__file__))
 qrimage_dir = os.path.join(basedir, 'static/barcodes')
 
 app = Flask(__name__, static_url_path='/static')
@@ -36,7 +40,8 @@ app.config['MAIL_USERNAME'] = SENDER
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres+psycopg2://postgres@pg/anhperf_dev'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('://', 'ql://', 1)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 mail.init_app(app)
 admin.init_app(app)
@@ -48,16 +53,20 @@ from .models import *
 
 from flask_admin.contrib.sqla import ModelView
 
-admin.add_view(ModelView(Participant,db.session))
-admin.add_view(ModelView(Registration,db.session))
+admin.add_view(ModelView(Participant, db.session))
+admin.add_view(ModelView(Registration, db.session))
 admin.add_view(ModelView(CheckIn, db.session))
 admin.add_view(ModelView(Role, db.session))
 
+gc = gspread.service_account(filename=os.environ.get('GOOGLE_JSON_KEYFILE'))
+
 
 def timezoned(value):
-    return value.astimezone(pytz.timezone('Asia/Bangkok')).strftime('%d %b %Y, %H:%M:%S')
+    return value.astimezone(bangkok).strftime('%d %b %Y, %H:%M:%S')
+
 
 app.jinja_env.filters['timezoned'] = timezoned
+
 
 class ParticipantForm(FlaskForm):
     email = StringField('Email')
@@ -72,7 +81,6 @@ class ParticipantForm(FlaskForm):
     payment_required = BooleanField()
     pay_status = BooleanField('Paid')
     submit = SubmitField('Submit')
-
 
 
 @app.route('/api/register/list')
@@ -114,10 +122,97 @@ def add_participant():
     print(form.errors)
     return render_template('new_participant.html', form=form)
 
-@app.route('/register/list')
-def list():
+
+@app.route('/register/registrants')
+def list_registrants():
     participants = Participant.query.all()
     return render_template('list.html', plist=participants, year=YEAR)
+
+
+@app.route('/register/registrants/reload')
+def reload_registrants():
+    sheet = gc.open_by_key(os.environ.get('GOOGLE_SHEET_ID'))
+    worksheet = sheet.get_worksheet(0)
+    new_registrants = 0
+    for rec in worksheet.get_all_records():
+        registrant = Participant.query.filter_by(firstname=rec['firstname'], lastname=rec['lastname']).first()
+        if not registrant:
+            new_registrant = Participant(firstname=rec['firstname'],
+                                         lastname=rec['lastname'],
+                                         title=rec['title'],
+                                         email=rec['email'],
+                                         mobile=rec['mobile'],
+                                         faculty=rec['university']
+                                         )
+            new_registration = Registration(regcode=rec['regcode'],
+                                            registered_at=rec['datetime'])
+            db.session.add(new_registration)
+            db.session.commit()
+            new_registration.generate_regcode()
+            new_registrant.registers.append(new_registration)
+            db.session.add(new_registrant)
+            db.session.commit()
+            new_registrants += 1
+    flash(f'{new_registrants} new registrants added.', 'success')
+    resp = make_response()
+    resp.headers['HX-Refresh'] = 'true'
+    return resp
+
+
+@app.route('/register/registrants', methods=['POST'])
+def check_registrant_code():
+    # register = Registration.query.filter_by(regcode=regcode)
+    regcode = request.form.get('regcode')
+    template = ''
+    if regcode:
+        registrant = Registration.query.filter_by(regcode=regcode).first()
+        if registrant:
+            checkin = CheckIn(checked_at=arrow.now(bangkok).datetime, registration=registrant)
+            db.session.add(checkin)
+            db.session.commit()
+            template = f'''
+            <div class="column has-text-centered">
+                <span class="icon is-large">
+                    <i class="fas fa-check-circle has-text-success fa-3x"></i>
+                </span><br>
+                <span class="subtitle">Succeeded!</span>
+            </div>
+            <table class="table is-fullwidth">
+                <thead>
+                <th>Code</th>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Latest Check In</th>
+                <th></th>
+                </thead>
+                <tbody>
+                    <tr>
+                    <td>{registrant.regcode}</td>
+                    <td>{registrant.participant.firstname}</td>
+                    <td>{registrant.participant.lastname}</td>
+                    <td>{registrant.participant.email}</td>
+                    <td>{registrant.participant.mobile}</td>
+                    <td>{checkin.checked_at.strftime('%d/%m/%Y %H:%M:%S')}</td>
+                    <td>
+                        <a class="button is-danger" href="{url_for('cancel_checkin', checkin_id=checkin.id, next=request.url)}">Cancel</a>
+                    </td>
+                    </tr>
+                </tbody>
+            </table>
+            '''
+    resp = make_response(template)
+    return resp
+
+
+@app.route('/cancel-checkin/<int:checkin_id>')
+def cancel_checkin(checkin_id):
+    checkin = CheckIn.query.get(checkin_id)
+    db.session.delete(checkin)
+    db.session.commit()
+    flash('Check-in has been cancelled.', 'success')
+    return redirect(request.args.get('next'))
 
 
 @app.route('/register/scan')
@@ -173,8 +268,8 @@ def send_mail(rid=None, recp_mail=None):
                   sender=SENDER,
                   recipients=[recp_mail])
 
-    if not os.path.exists(os.path.join(qrimage_dir, '{}.png'.format(rid))):
-        get_barcode(rid)
+    # if not os.path.exists(os.path.join(qrimage_dir, '{}.png'.format(rid))):
+    #     get_barcode(rid)
 
     with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
         msg.attach("{}.png".format(rid), "image/png", fp.read())
@@ -195,7 +290,7 @@ def display_html_message(rid):
 
 @app.cli.command()
 @click.argument('rid', required=False)
-def send_mail_barcode(rid=None,role=None):
+def send_mail_barcode(rid=None, role=None):
     if rid:
         reg = Registration.query.filter_by(id=rid).first()
         participants = [reg.participant]
@@ -218,12 +313,13 @@ def send_mail_barcode(rid=None,role=None):
             with app.open_resource("templates/message.txt") as template_fp:
                 content = template_fp.read().decode('utf-8')
 
-            msg = Message(subject='Welcome to the 6th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
-                          sender=SENDER,
-                          body=content,
-                          #recipients=['likit.pre@mahidol.edu'],
-                          recipients=[recp.email],
-                          cc=['likit.pre@mahidol.edu'])
+            msg = Message(
+                subject='Welcome to the 6th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
+                sender=SENDER,
+                body=content,
+                # recipients=['likit.pre@mahidol.edu'],
+                recipients=[recp.email],
+                cc=['likit.pre@mahidol.edu'])
             rid = recp.registers[-1].id
             with app.open_resource("{}/{}.png".format(qrimage_dir, rid)) as fp:
                 msg.attach("{}.png".format(rid), "image/png", fp.read())
@@ -245,7 +341,7 @@ def send_mail_barcode(rid=None,role=None):
 @app.cli.command()
 def send_mail_payment_reminder():
     regs = Registration.query.filter_by(payment_required=True,
-                                                pay_status=False)
+                                        pay_status=False)
     recp_mails = []
     for r in regs:
         recp_mails.append(r.participant.email)
@@ -255,11 +351,13 @@ def send_mail_payment_reminder():
 
     with mail.connect() as conn:
         for recp in recp_mails[1:]:
-            msg = Message(subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF {})'.format(YEAR),
-                            sender=SENDER,
-                            body=content,
-                            recipients=[recp],
-                            cc=['likit.pre@mahidol.edu'])
+            msg = Message(
+                subject='Registration information for the 5th Annual Health National Professional Reform Forum (ANHPERF {})'.format(
+                    YEAR),
+                sender=SENDER,
+                body=content,
+                recipients=[recp],
+                cc=['likit.pre@mahidol.edu'])
             try:
                 conn.send(msg)
             except Exception:
@@ -270,7 +368,7 @@ def send_mail_payment_reminder():
 def pay(rid=None):
     if not rid:
         return jsonify({'message': 'No account ID specified'})
-    register = Registration.query.filter(Registration.id==rid).first()
+    register = Registration.query.filter(Registration.id == rid).first()
     # participant can only check in a single time
     if register:
         register.pay_status = True
@@ -289,7 +387,7 @@ def checkin(rid=None):
             trim_id = int(rid[4:])
         else:
             trim_id = rid
-        register = Registration.query.filter(Registration.id==trim_id).first()
+        register = Registration.query.filter(Registration.id == trim_id).first()
         if (register.payment_required and register.pay_status) or \
                 (not register.payment_required):
             new_checked_date = datetime.datetime.now(pytz.utc)
@@ -300,39 +398,39 @@ def checkin(rid=None):
             status = 'success'
         else:
             status = 'unpaid'
-        return redirect(url_for('scan',rid=register.id, status=status))
+        return redirect(url_for('scan', rid=register.id, status=status))
     return redirect(url_for('scan'))
 
 
-def get_barcode(rid):
-    if not os.path.exists(qrimage_dir):
-        os.mkdir(qrimage_dir)
-
-    EAN = barcode.get_barcode_class('code128')
-    ean = EAN(u'{}{:05}'.format(YEAR, int(rid)), writer=ImageWriter())
-    imgname = ean.save('{}/{}'.format(qrimage_dir, rid))
-    fp = open('{}'.format(imgname), 'wb')
-    ean.write(fp)
-    fp.close()
-
-
-from .load_data import load
-
-@app.cli.command()
-@click.argument('inputfile')
-def load_data(inputfile):
-    load(inputfile)
+# def get_barcode(rid):
+#     if not os.path.exists(qrimage_dir):
+#         os.mkdir(qrimage_dir)
+#
+#     EAN = barcode.get_barcode_class('code128')
+#     ean = EAN(u'{}{:05}'.format(YEAR, int(rid)), writer=ImageWriter())
+#     imgname = ean.save('{}/{}'.format(qrimage_dir, rid))
+#     fp = open('{}'.format(imgname), 'wb')
+#     ean.write(fp)
+#     fp.close()
 
 
-@app.cli.command()
-@click.argument('id', required=False)
-def gen_barcode(id=None):
-    if id is None:
-        for reg in Registration.query.all():
-            get_barcode(reg.id)
-            print('Barcode for {} has been generated...'.format(reg.id))
-    else:
-        get_barcode(id)
+# from .load_data import load
+
+# @app.cli.command()
+# @click.argument('inputfile')
+# def load_data(inputfile):
+#     load(inputfile)
+
+
+# @app.cli.command()
+# @click.argument('id', required=False)
+# def gen_barcode(id=None):
+#     if id is None:
+#         for reg in Registration.query.all():
+#             get_barcode(reg.id)
+#             print('Barcode for {} has been generated...'.format(reg.id))
+#     else:
+#         get_barcode(id)
 
 
 if __name__ == '__main__':

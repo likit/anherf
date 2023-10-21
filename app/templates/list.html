@@ -3,20 +3,19 @@
 <div class="tabs">
     <ul>
         <li class=""><a href="/">Home</a></li>
-        <li class="is-active"><a href="{{ url_for('scan') }}">Check In</a></li>
-        <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
-        <li class=""><a href="{{ url_for('add_participant') }}">Register</a></li>
+        <li class=""><a href="{{ url_for('scan') }}">Check In</a></li>
+        <li class="is-active"><a href="{{ url_for('list_registrants') }}">Participants</a></li>
         <li class=""><a href="/admin">Admin Page</a></li>
     </ul>
 </div>
 <section class="section">
     <div class="container">
-        <h1 class="title has-text-centered">Participants</h1>
+        <h1 class="title has-text-centered">Registrants</h1>
         <div class="columns">
             <div class="column">
-                <table class="stripe" id="myTable">
+                {% include "flashes.html" %}
+                <table class="is-fullwidth table" id="myTable">
                     <thead>
-                    <th>Registration No.</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Affiliation</th>
@@ -28,7 +27,6 @@
                     <tbody>
                     {% for record in plist %}
                     <tr>
-                        <td>{{ '{}{:05}'.format(year,record.registers[-1].id) }}</td>
                         <td>
                             {{ record.fullname }}
                         </td>
@@ -58,7 +56,11 @@
                                 <span class="icon"><i class="fas fa-check-circle"></i></span>
                                 {% else %}
                                 <a href="{{ url_for('checkin', rid=record.registers[-1].id) }}"
-                                    class="button is-outlined is-rounded is-primary">Check in
+                                    class="button is-small is-success">
+                                    <span class="icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </span>
+                                    <span>Check in</span>
                                 </a>
                                 {% endif %}
                             {% endif %}
@@ -67,6 +69,14 @@
                     {% endfor %}
                     </tbody>
                 </table>
+                <div class="buttons is-centered">
+                    <a class="button is-primary" hx-get="{{ url_for('reload_registrants') }}">
+                        <span class="icon">
+                            <i class="fas fa-sync-alt" id="reloadIcon"></i>
+                        </span>
+                        <span>Reload</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -75,22 +85,12 @@
 {% block scripts %}
 {{super()}}
 <script>
-    var ViewModel = function () {
-        var self = this;
-        self.barcode = ko.observable();
-        self.barcode.subscribe(function (value) {
-            if (value.length === 9) {
-                window.location.href = "/checkin/" + value;
-            }
-        });
-    }
-    var vm = new ViewModel();
-    ko.applyBindings(vm);
-</script>
-<script>
+    document.addEventListener('htmx:beforeSend', function () {
+        htmx.addClass(htmx.find('#reloadIcon'), 'fa-pulse')
+    })
     $(document).ready(function () {
         $('#myTable').DataTable({
-            'pageLength': 40,
+            'pageLength': 20,
         });
     });
 </script>

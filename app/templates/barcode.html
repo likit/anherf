@@ -4,8 +4,7 @@
     <ul>
         <li class=""><a href="/">Home</a></li>
         <li class="is-active"><a href="{{ url_for('scan') }}">Check In</a></li>
-        <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
-        <li class=""><a href="{{ url_for('add_participant') }}">Register</a></li>
+        <li class=""><a href="{{ url_for('list_registrants') }}">Participants</a></li>
         <li class=""><a href="/admin">Admin Page</a></li>
     </ul>
 </div>
@@ -23,86 +22,58 @@
             <div class="column is-half is-offset-3">
                 <div class="field">
                     <div class="control">
-                        <input class="input is-rounded is-medium is-danger" type="number" data-bind="textInput: barcode"
-                               placeholder="Scan barcode or enter the registration code" autofocus/>
+                        <form>
+                            <input class="input is-rounded is-medium is-danger"
+                                   id="regcode"
+                                   name="regcode"
+                                   hx-swap="innerHTML"
+                                   hx-target="#registrant-table"
+                                   hx-trigger="keyup changed delay:500ms"
+                                   hx-post="{{ url_for('check_registrant_code') }}"
+                                   placeholder="Scan barcode or enter the registration code" autofocus/>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
         <div class="columns">
-            {% if register %}
-            {% if status=='success' %}
-            <div class="column has-text-centered">
-                <span class="icon is-large">
-                    <i class="fas fa-check-circle has-text-success fa-3x"></i>
-                </span><br>
-                <span class="subtitle">Succeeded!</span>
-            </div>
-            {% elif status=='repeated' %}
-            <div class="column has-text-centered">
-                <span class="icon is-large">
-                    <i class="fas fa-times-circle has-text-warning fa-3x"></i>
-                </span><br>
-                <span class="subtitle">Already checked in today!</span>
-            </div>
-            {% else %}
-            <div class="column has-text-centered">
-                <span class="icon is-large">
-                    <i class="fas fa-times-circle has-text-danger fa-3x"></i>
-                </span><br>
-                <span class="subtitle">Payment required!</span>
-            </div>
-            {% endif %}
-        </div>
-        <div class="columns">
-            <div class="column is-offset-2">
-                <table class="table is-narrow">
-                    <thead>
-                        <th>Registration No.</th>
-                        <th>Title</th>
-                        <th>First name</th>
-                        <th>Last name</th>
+            <div class="column" id="registrant-table">
+                {% if register %}
+                    <div class="has-text-centered">
+                        <span class="icon is-large">
+                            <i class="fas fa-check-circle has-text-success fa-3x"></i>
+                        </span><br>
+                        <span class="subtitle">Succeeded!</span>
+                    </div>
+                    <table class="table is-fullwidth">
+                        <thead>
+                        <th>Code</th>
+                        <th>Firstname</th>
+                        <th>Lastname</th>
                         <th>Email</th>
-                        <th>Role</th>
-                        <th>Registered at</th>
-                        <th>Payment status</th>
-                    </thead>
-                    <tbody>
+                        <th>Phone</th>
+                        <th>Latest Check In</th>
+                        <th></th>
+                        </thead>
+                        <tbody>
                         <tr>
-                            <td>{{ '{}{:05}'.format(2019,register.id) }}</td>
-                            <td>{{ register.participant.title }}</td>
-                            <td>{{ register.participant.firstname }}</td>
-                            <td>{{ register.participant.lastname }}</td>
-                            <td>{{ register.participant.email }}</td>
-                            <td>{{ register.participant.role.desc }}</td>
-                            <td>{{ register.registered_at|timezoned }}</td>
-                            {% if not register.payment_required or register.pay_status %}
-                            <td><i class="far fa-thumbs-up has-text-success"></i></td>
-                            {% else %}
-                                {% if not register.pay_status %}
-                                <td><a class="button is-outlined is-rounded is-danger"
-                                       href="{{ url_for('pay', rid=register.id) }}">Pay</a></td>
-                                {% endif %}
-                            {% endif %}
+                            <td>{{register.regcode}}</td>
+                            <td>{{register.participant.firstname}}</td>
+                            <td>{{register.participant.lastname}}</td>
+                            <td>{{register.participant.email}}</td>
+                            <td>{{register.participant.mobile}}</td>
+                            <td>{{register.checkins[-1].checked_at|timezoned}}</td>
+                            <td>
+                                <a class="button is-danger"
+                                   href="{url_for('cancel_checkin', checkin_id=checkin.id, next=request.url)}">
+                                    Cancel
+                                </a>
+                            </td>
                         </tr>
-                    </tbody>
-                </table>
-                <table class="table is-narrow">
-                    <col width="10">
-                    <thead>
-                        <th colspan="2">Check-in History</th>
-                    </thead>
-                    <tbody>
-                    {% for chk in register.checkins|reverse %}
-                        <tr>
-                            <td>{{ loop.index }}</td>
-                            <td>{{ chk.checked_at | timezoned }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -110,17 +81,9 @@
 {% endblock %}
 {% block scripts %}
 {{super()}}
-<script>
-    var ViewModel = function () {
-        var self = this;
-        self.barcode = ko.observable();
-        self.barcode.subscribe(function (value) {
-            if (value.length === 9) {
-                window.location.href = "/checkin/" + value;
-            }
-        });
-    }
-    var vm = new ViewModel();
-    ko.applyBindings(vm);
-</script>
+    <script>
+    document.addEventListener('htmx:afterSwap', function (event) {
+        $('#regcode').val('')
+    })
+    </script>
 {% endblock %}

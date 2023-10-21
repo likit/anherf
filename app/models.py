@@ -1,6 +1,8 @@
+import arrow
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship, backref
 from .main import db
+
 
 class Participant(db.Model):
     __tablename__ = 'participants'
@@ -23,10 +25,19 @@ class Participant(db.Model):
     role = relationship('Role', backref='participants')
     attend_as = Column('attend_as', String())
 
-
     @property
     def fullname(self):
         return u'{}{} {}'.format(self.title, self.firstname, self.lastname)
+
+    def to_dict(self):
+        return {'firstname': self.firstname,
+                'lastname': self.lastname,
+                'email': self.email,
+                'mobile': self.mobile,
+                'faculty': self.faculty,
+                'title': self.title,
+                'code': self.regcode
+                }
 
 
 class Registration(db.Model):
@@ -40,6 +51,9 @@ class Registration(db.Model):
     badge = Column('badge', String(32))
     pay_status = Column('pay_status', Boolean(), default=False)
     paid_on = Column('paid_on', Date(), nullable=True)
+
+    def generate_regcode(self):
+        self.regcode = '{}{:05}'.format(arrow.now().year, self.id)
 
 
 class CheckIn(db.Model):
@@ -60,5 +74,3 @@ class Role(db.Model):
 
     def __repr__(self):
         return self.desc.title()
-
-
