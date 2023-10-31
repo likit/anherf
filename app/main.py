@@ -234,17 +234,17 @@ def check_in_registrant(participant_id):
             resp.headers['HX-Refresh'] = 'true'
             flash('Payment is required.', 'danger')
             return resp
-        checkin = CheckIn.query.filter_by(registration=regis).filter(func.DATE(CheckIn.checked_at) == datetime.date.today()).first()
+        checkin = CheckIn.query.filter_by(registration=regis).filter(func.DATE(CheckIn.checked_at) == arrow.now('Asia/Bangkok').date()).first()
         if checkin:
             template = '<table class="table is-bordered is-fullwidth"><tr><td class="has-text-success">The participant already checked in today at {}.</td></tr></table>'\
                 .format(checkin.checked_at.astimezone(bangkok).strftime('%H:%M'))
             resp = make_response(template)
             return resp
-        checkin = CheckIn(registration=regis)
+        checkin = CheckIn(registration=regis, checked_at=arrow.now('Asia/Bangkok').datetime)
         db.session.add(checkin)
         db.session.commit()
         total_registrants = Registration.query.count()
-        total_check_ins = CheckIn.query.filter(func.DATE(CheckIn.checked_at) == datetime.date.today()).count()
+        total_check_ins = CheckIn.query.filter(func.DATE(CheckIn.checked_at) == arrow.now('Asia/Bangkok').date()).count()
         template = f'''
         <table class="table" id="stat" hx-swap-oob="true" hx-swap="outerHTML">
             <tbody>
@@ -253,7 +253,7 @@ def check_in_registrant(participant_id):
                 <td>{ total_registrants }</td>
             </tr>
             <tr>
-                <td><strong>Checked In { datetime.date.today() }</strong></td>
+                <td><strong>Checked In { arrow.now('Asia/Bangkok').date() }</strong></td>
                 <td>{ total_check_ins } ({ round(total_check_ins/total_registrants*100.0, 2) }%)</td>
             </tr>
             </tbody>
