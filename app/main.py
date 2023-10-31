@@ -216,7 +216,7 @@ def search_registrant_name():
                                        p.email,
                                        p.mobile,
                                        p.faculty,
-                                       p.last_checkin or '',
+                                       p.last_checkin.checked_at.astimezone(bangkok).strftime('%d/%m/%Y %H:%M:%S') if p.last_checkin else '',
                                        url_for('check_in_registrant', participant_id=p.id))
     template += '</tbody></table>'
     resp = make_response(template)
@@ -234,7 +234,7 @@ def check_in_registrant(participant_id):
             resp.headers['HX-Refresh'] = 'true'
             flash('Payment is required.', 'danger')
             return resp
-        checkin = CheckIn.query.filter_by(registration=regis).filter(func.DATE(CheckIn.checked_at) == arrow.now('Asia/Bangkok').date()).first()
+        checkin = CheckIn.query.filter_by(registration=regis).filter(func.DATE(func.timezone('Asia/Bangkok', CheckIn.checked_at)) == arrow.now('Asia/Bangkok').date()).first()
         if checkin:
             template = '<table class="table is-bordered is-fullwidth"><tr><td class="has-text-success">The participant already checked in today at {}.</td></tr></table>'\
                 .format(checkin.checked_at.astimezone(bangkok).strftime('%H:%M'))
@@ -244,7 +244,7 @@ def check_in_registrant(participant_id):
         db.session.add(checkin)
         db.session.commit()
         total_registrants = Registration.query.count()
-        total_check_ins = CheckIn.query.filter(func.DATE(CheckIn.checked_at) == arrow.now('Asia/Bangkok').date()).count()
+        total_check_ins = CheckIn.query.filter(func.DATE(func.timezone('Asia/Bangkok', CheckIn.checked_at)) == arrow.now('Asia/Bangkok').date()).count()
         template = f'''
         <table class="table" id="stat" hx-swap-oob="true" hx-swap="outerHTML">
             <tbody>
@@ -281,7 +281,7 @@ def check_in_registrant(participant_id):
                 <td>{regis.participant.lastname}</td>
                 <td>{regis.participant.email}</td>
                 <td>{regis.participant.mobile}</td>
-                <td>{checkin.checked_at.strftime('%d/%m/%Y %H:%M:%S')}</td>
+                <td>{checkin.checked_at.astimezone(bangkok).strftime('%d/%m/%Y %H:%M:%S')}</td>
                 <td>
                     <a class="button is-danger" href="{url_for('cancel_checkin', checkin_id=checkin.id)}">Cancel</a>
                 </td>
@@ -312,7 +312,7 @@ def scan():
     else:
         register = None
     total_registrants = Registration.query.count()
-    total_check_ins = CheckIn.query.filter(func.DATE(CheckIn.checked_at) == datetime.date.today()).count()
+    total_check_ins = CheckIn.query.filter(func.DATE(func.timezone('Asia/Bangkok', CheckIn.checked_at)) == datetime.date.today()).count()
     return render_template('barcode.html',
                            register=register,
                            status=status,

@@ -69,9 +69,6 @@ class CheckIn(db.Model):
     reg_id = Column('reg_id', db.ForeignKey('registrations.id'))
     registration = db.relationship('Registration', backref=db.backref('checkins'))
 
-    def __repr__(self):
-        return self.checked_at.strftime('%d-%m-%Y %H:%M:%S')
-
 
 class Role(db.Model):
     __tablename__ = 'roles'
