@@ -1,5 +1,5 @@
 import arrow
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Date, func
 from .main import db
 
 
@@ -65,7 +65,7 @@ class Registration(db.Model):
 class CheckIn(db.Model):
     __tablename__ = 'checkins'
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    checked_at = Column('checked_at', DateTime(timezone=True))
+    checked_at = Column('checked_at', DateTime(timezone=True), server_default=func.now())
     reg_id = Column('reg_id', db.ForeignKey('registrations.id'))
     registration = db.relationship('Registration', backref=db.backref('checkins'))
 

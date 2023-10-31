@@ -240,7 +240,7 @@ def check_in_registrant(participant_id):
                 .format(checkin.checked_at.astimezone(bangkok).strftime('%H:%M'))
             resp = make_response(template)
             return resp
-        checkin = CheckIn(checked_at=arrow.now(bangkok).datetime, registration=regis)
+        checkin = CheckIn(registration=regis)
         db.session.add(checkin)
         db.session.commit()
         total_registrants = Registration.query.count()
