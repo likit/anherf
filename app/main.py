@@ -12,6 +12,7 @@ import pandas as pd
 from sys import stderr
 # import barcode
 import pytz
+import requests
 # from barcode.writer import ImageWriter
 from flask import (Flask, jsonify, render_template,
                    send_file, request, url_for, redirect, flash, make_response)
@@ -61,7 +62,8 @@ admin.add_view(ModelView(Registration, db.session))
 admin.add_view(ModelView(CheckIn, db.session))
 admin.add_view(ModelView(Role, db.session))
 
-gc = gspread.service_account(filename=os.environ.get('GOOGLE_JSON_KEYFILE'))
+credentials = requests.get(os.environ.get('GOOGLE_JSON_KEYFILE')).json()
+gc = gspread.service_account_from_dict(credentials)
 
 
 def timezoned(value):
