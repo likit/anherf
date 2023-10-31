@@ -2,6 +2,8 @@
 
 import os
 import datetime
+import uuid
+
 import gspread
 import arrow
 import click
@@ -18,6 +20,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_wtf import FlaskForm
+from sqlalchemy import or_, func
 from wtforms import StringField, SubmitField, SelectField, BooleanField
 from dotenv import load_dotenv
 
@@ -135,17 +138,38 @@ def reload_registrants():
     worksheet = sheet.get_worksheet(0)
     new_registrants = 0
     for rec in worksheet.get_all_records():
-        registrant = Participant.query.filter_by(firstname=rec['firstname'], lastname=rec['lastname']).first()
+        registrant = Participant.query.filter_by(firstname=rec['4. Name '], lastname=rec['6. Last name\n']).first()
         if not registrant:
-            new_registrant = Participant(firstname=rec['firstname'],
-                                         lastname=rec['lastname'],
-                                         title=rec['title'],
-                                         email=rec['email'],
-                                         mobile=rec['mobile'],
-                                         faculty=rec['university']
+            new_registrant = Participant(firstname=rec['4. Name '],
+                                         lastname=rec['6. Last name\n'],
+                                         title=rec['1.Title'],
+                                         email=rec['7. E-mail address'],
+                                         mobile=rec['8. Mobile phone number'],
+                                         faculty=rec['10. Institution/University/College/Hospital ']
                                          )
-            new_registration = Registration(regcode=rec['regcode'],
-                                            registered_at=rec['datetime'])
+            new_registration = Registration(regcode=str(uuid.uuid4())[:8],
+                                            registered_at=rec['Timestamp'])
+            db.session.add(new_registration)
+            db.session.commit()
+            new_registration.generate_regcode()
+            new_registrant.registers.append(new_registration)
+            db.session.add(new_registrant)
+            db.session.commit()
+            new_registrants += 1
+    sheet = gc.open_by_key(os.environ.get('GOOGLE_SHEET_ID2'))
+    worksheet = sheet.get_worksheet(0)
+    for rec in worksheet.get_all_records():
+        registrant = Participant.query.filter_by(firstname=rec['3. First name'], lastname=rec['5. Last name']).first()
+        if not registrant:
+            new_registrant = Participant(firstname=rec['3. First name'],
+                                         lastname=rec['5. Last name'],
+                                         title=rec['1. Title'],
+                                         email=rec['ที่อยู่อีเมล'],
+                                         mobile=rec['7. Mobile phone number'],
+                                         faculty=rec['9. Institution/University/College/Hospital']
+                                         )
+            new_registration = Registration(regcode=str(uuid.uuid4())[:8],
+                                            registered_at=datetime.datetime.strptime(rec['ประทับเวลา'], '%d/%m/%Y, %H:%M:%S'))
             db.session.add(new_registration)
             db.session.commit()
             new_registration.generate_regcode()
@@ -159,49 +183,109 @@ def reload_registrants():
     return resp
 
 
-@app.route('/register/registrants', methods=['POST'])
-def check_registrant_code():
+@app.route('/registrants/name-search', methods=['POST'])
+def search_registrant_name():
+    name = request.form.get('name')
+    template = '<table class="table is-fullwidth">' \
+               '<thead>' \
+               '<th>Firstname</th>' \
+               '<th>Lastname</th>' \
+               '<th>Email</th>' \
+               '<th>Phone</th>' \
+               '<th>Affiliation</th>' \
+               '<th>Last Seen</th>' \
+               '<th></th>' \
+               '</thead>' \
+               '<tbody>'
+    for p in Participant.query.filter(or_(Participant.firstname.ilike(f'%{name}%'),
+                                            (Participant.lastname.ilike(f'%{name}%')))):
+        template += '<tr>' \
+                    '<td>{}</td>' \
+                    '<td>{}</td>' \
+                    '<td>{}</td>' \
+                    '<td>{}</td>' \
+                    '<td>{}</td>' \
+                    '<td>{}</td>' \
+                    '<td><a class="button is-outlined is-info" hx-post="{}" hx-target="#registrant-table" ' \
+                    'hx-swap="innerHTML">Check In</a></td>' \
+                    '</tr>'.format(p.firstname,
+                                   p.lastname,
+                                   p.email,
+                                   p.mobile,
+                                   p.faculty,
+                                   p.last_checkin or '',
+                                   url_for('check_in_registrant', participant_id=p.id))
+    template += '</tbody></table>'
+    resp = make_response(template)
+    return resp
+
+
+@app.route('/register/registrants/<int:participant_id>', methods=['POST'])
+def check_in_registrant(participant_id):
     # register = Registration.query.filter_by(regcode=regcode)
-    regcode = request.form.get('regcode')
     template = ''
-    if regcode:
-        registrant = Registration.query.filter_by(regcode=regcode).first()
-        if registrant:
-            checkin = CheckIn(checked_at=arrow.now(bangkok).datetime, registration=registrant)
-            db.session.add(checkin)
-            db.session.commit()
-            template = f'''
-            <div class="column has-text-centered">
-                <span class="icon is-large">
-                    <i class="fas fa-check-circle has-text-success fa-3x"></i>
-                </span><br>
-                <span class="subtitle">Succeeded!</span>
-            </div>
-            <table class="table is-fullwidth">
-                <thead>
-                <th>Code</th>
-                <th>Firstname</th>
-                <th>Lastname</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Latest Check In</th>
-                <th></th>
-                </thead>
-                <tbody>
-                    <tr>
-                    <td>{registrant.regcode}</td>
-                    <td>{registrant.participant.firstname}</td>
-                    <td>{registrant.participant.lastname}</td>
-                    <td>{registrant.participant.email}</td>
-                    <td>{registrant.participant.mobile}</td>
-                    <td>{checkin.checked_at.strftime('%d/%m/%Y %H:%M:%S')}</td>
-                    <td>
-                        <a class="button is-danger" href="{url_for('cancel_checkin', checkin_id=checkin.id, next=request.url)}">Cancel</a>
-                    </td>
-                    </tr>
-                </tbody>
-            </table>
-            '''
+    regis = Registration.query.filter_by(participant_id=participant_id).first()
+    if regis:
+        if regis.payment_required and not regis.pay_status:
+            resp = make_response()
+            resp.headers['HX-Refresh'] = 'true'
+            flash('Payment is required.', 'danger')
+            return resp
+        checkin = CheckIn.query.filter_by(registration=regis).filter(func.DATE(CheckIn.checked_at) == datetime.date.today()).first()
+        if checkin:
+            template = '<table class="table is-bordered is-fullwidth"><tr><td class="has-text-success">The participant already checked in today at {}.</td></tr></table>'\
+                .format(checkin.checked_at.astimezone(bangkok).strftime('%H:%M'))
+            resp = make_response(template)
+            return resp
+        checkin = CheckIn(checked_at=arrow.now(bangkok).datetime, registration=regis)
+        db.session.add(checkin)
+        db.session.commit()
+        total_registrants = Registration.query.count()
+        total_check_ins = CheckIn.query.filter(func.DATE(CheckIn.checked_at) == datetime.date.today()).count()
+        template = f'''
+        <table class="table" id="stat" hx-swap-oob="true" hx-swap="outerHTML">
+            <tbody>
+            <tr>
+                <td><strong>Total Registrants</strong></td>
+                <td>{ total_registrants }</td>
+            </tr>
+            <tr>
+                <td><strong>Checked In { datetime.date.today() }</strong></td>
+                <td>{ total_check_ins } ({ round(total_check_ins/total_registrants*100.0, 2) }%)</td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="column has-text-centered">
+            <span class="icon is-large">
+                <i class="fas fa-check-circle has-text-success fa-3x"></i>
+            </span><br>
+            <span class="subtitle">Succeeded!</span>
+        </div>
+        <table class="table is-fullwidth">
+            <thead>
+            <th>Code</th>
+            <th>Firstname</th>
+            <th>Lastname</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Latest Check In</th>
+            <th></th>
+            </thead>
+            <tbody>
+                <tr>
+                <td>{regis.regcode}</td>
+                <td>{regis.participant.firstname}</td>
+                <td>{regis.participant.lastname}</td>
+                <td>{regis.participant.email}</td>
+                <td>{regis.participant.mobile}</td>
+                <td>{checkin.checked_at.strftime('%d/%m/%Y %H:%M:%S')}</td>
+                <td>
+                    <a class="button is-danger" href="{url_for('cancel_checkin', checkin_id=checkin.id)}">Cancel</a>
+                </td>
+                </tr>
+            </tbody>
+        </table>
+        '''
     resp = make_response(template)
     return resp
 
@@ -211,10 +295,11 @@ def cancel_checkin(checkin_id):
     checkin = CheckIn.query.get(checkin_id)
     db.session.delete(checkin)
     db.session.commit()
-    flash('Check-in has been cancelled.', 'success')
-    return redirect(request.args.get('next'))
+    flash('Check-in has been cancelled.', 'danger')
+    return redirect(url_for('scan'))
 
 
+@app.route('/')
 @app.route('/register/scan')
 def scan():
     rid = request.args.get('rid', None)
@@ -223,38 +308,14 @@ def scan():
         register = Registration.query.filter_by(id=int(rid)).first()
     else:
         register = None
-    return render_template('barcode.html', register=register, status=status)
-
-
-@app.route('/')
-@app.route('/register')
-def show_register():
-    today = datetime.datetime.now().date()
-    checkins = CheckIn.query.all()
-    all_regs_count = Registration.query.count()
-    data = []
-    for chk in checkins:
-        if chk.checked_at.date() == today:
-            data.append([
-                chk.registration.participant.id,
-                chk.registration.participant.role.desc,
-                chk.checked_at.date(),
-            ])
-
-    df = pd.DataFrame(data, columns=['pid', 'role', 'checkin_date'])
-    df = df.drop_duplicates('pid')
-    summary = df.groupby('role').checkin_date.count()
-    summary = summary.apply(int)
-    if checkins:
-        last_checkin = checkins[-1]
-    else:
-        last_checkin = None
-    print(summary)
-    return render_template('index.html',
-                           checkins=checkins,
-                           summary=summary,
-                           last_checkin=last_checkin,
-                           all_regs_count=all_regs_count,
+    total_registrants = Registration.query.count()
+    total_check_ins = CheckIn.query.filter(func.DATE(CheckIn.checked_at) == datetime.date.today()).count()
+    return render_template('barcode.html',
+                           register=register,
+                           status=status,
+                           total_registrants=total_registrants,
+                           total_check_ins=total_check_ins,
+                           today=datetime.date.today()
                            )
 
 

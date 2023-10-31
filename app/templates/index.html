@@ -4,7 +4,7 @@
     <ul>
         <li class="is-active"><a href="/">Home</a></li>
         <li class=""><a href="{{ url_for('scan') }}">Check In</a></li>
-        <li class=""><a href="{{ url_for('list') }}">Participants</a></li>
+        <li class=""><a href="{{ url_for('get_list_api') }}">Participants</a></li>
         <li class=""><a href="{{ url_for('add_participant') }}">Register</a></li>
         <li class=""><a href="/admin">Admin Page</a></li>
     </ul>
@@ -26,7 +26,7 @@
             </div>
             <div class="column is-one-fourth">
                 <div class="box has-text-centered">
-                    <a href="{{url_for('list')}}" class="title is-size-4">
+                    <a href="{{url_for('get_list_api')}}" class="title is-size-4">
                         <span class="icon is-large">
                             <i class="far fa-address-book fa-2x"></i>
                         </span>

@@ -1,6 +1,5 @@
 import arrow
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Date
-from sqlalchemy.orm import relationship, backref
 from .main import db
 
 
@@ -22,12 +21,19 @@ class Participant(db.Model):
     position_type = Column('position_type', String(), nullable=True)
     profession = Column('profession', String(), nullable=True)
     role_id = Column('role_id', Integer(), ForeignKey('roles.id'))
-    role = relationship('Role', backref='participants')
+    role = db.relationship('Role', backref=db.backref('participants'))
     attend_as = Column('attend_as', String())
 
     @property
     def fullname(self):
         return u'{}{} {}'.format(self.title, self.firstname, self.lastname)
+
+    @property
+    def last_checkin(self):
+        try:
+            return self.registers[-1].checkins[-1]
+        except:
+            return None
 
     def to_dict(self):
         return {'firstname': self.firstname,
@@ -46,7 +52,7 @@ class Registration(db.Model):
     regcode = Column('regcode', String(16), unique=True)
     registered_at = Column('registered_at', DateTime(timezone=True))
     participant_id = Column('participant_id', ForeignKey('participants.id'))
-    participant = db.relationship('Participant', backref=backref('registers'))
+    participant = db.relationship('Participant', backref=db.backref('registers'))
     payment_required = Column('payment_required', Boolean(), default=False)
     badge = Column('badge', String(32))
     pay_status = Column('pay_status', Boolean(), default=False)
@@ -61,7 +67,7 @@ class CheckIn(db.Model):
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     checked_at = Column('checked_at', DateTime(timezone=True))
     reg_id = Column('reg_id', db.ForeignKey('registrations.id'))
-    registration = relationship('Registration', backref='checkins')
+    registration = db.relationship('Registration', backref=db.backref('checkins'))
 
     def __repr__(self):
         return self.checked_at.strftime('%d-%m-%Y %H:%M:%S')

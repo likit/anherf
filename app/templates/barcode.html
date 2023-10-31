@@ -5,17 +5,18 @@
         <li class=""><a href="/">Home</a></li>
         <li class="is-active"><a href="{{ url_for('scan') }}">Check In</a></li>
         <li class=""><a href="{{ url_for('list_registrants') }}">Participants</a></li>
-        <li class=""><a href="/admin">Admin Page</a></li>
     </ul>
 </div>
 <section class="section">
     <div class="container">
+        {% include "flashes.html" %}
         <div class="box">
         <div class="has-text-centered">
+            <h1 class="title">Welcome to GHPEC 2023</h1>
             <span class="icon is-large">
-                <i class="fas fa-barcode fa-4x"></i>
+                <i class="far fa-user fa-4x" id="account-icon"></i>
             </span><br>
-            <h1 class="title">Check In</h1>
+            <h1 class="subtitle">Check In Service</h1>
         </div>
         <br>
         <div class="columns">
@@ -25,12 +26,12 @@
                         <form>
                             <input class="input is-rounded is-medium is-danger"
                                    id="regcode"
-                                   name="regcode"
+                                   name="name"
                                    hx-swap="innerHTML"
                                    hx-target="#registrant-table"
-                                   hx-trigger="keyup changed delay:500ms"
-                                   hx-post="{{ url_for('check_registrant_code') }}"
-                                   placeholder="Scan barcode or enter the registration code" autofocus/>
+                                   hx-trigger="keyup changed delay:900ms"
+                                   hx-post="{{ url_for('search_registrant_name') }}"
+                                   placeholder="Search registrant by first or last name" autofocus/>
                         </form>
                     </div>
                 </div>
@@ -76,6 +77,20 @@
             </div>
         </div>
     </div>
+    <div class="box">
+        <table class="table" id="stat">
+            <tbody>
+            <tr>
+                <td><strong>Total Registrants</strong></td>
+                <td>{{ total_registrants }}</td>
+            </tr>
+            <tr>
+                <td><strong>Checked In {{ today }}</strong></td>
+                <td>{{ total_check_ins }} ({{ "%.2f"|format(total_check_ins/total_registrants*100.0) }}%)</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 </section>
 {% endblock %}
@@ -83,7 +98,10 @@
 {{super()}}
     <script>
     document.addEventListener('htmx:afterSwap', function (event) {
-        $('#regcode').val('')
+        htmx.removeClass(htmx.find('#account-icon'), 'fa-pulse')
+    })
+    document.addEventListener('htmx:beforeSend', function (event) {
+        htmx.addClass(htmx.find('#account-icon'), 'fa-pulse')
     })
     </script>
 {% endblock %}
