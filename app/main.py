@@ -199,24 +199,25 @@ def search_registrant_name():
                '<th></th>' \
                '</thead>' \
                '<tbody>'
-    for p in Participant.query.filter(or_(Participant.firstname.ilike(f'%{name}%'),
-                                            (Participant.lastname.ilike(f'%{name}%')))):
-        template += '<tr>' \
-                    '<td>{}</td>' \
-                    '<td>{}</td>' \
-                    '<td>{}</td>' \
-                    '<td>{}</td>' \
-                    '<td>{}</td>' \
-                    '<td>{}</td>' \
-                    '<td><a class="button is-outlined is-info" hx-post="{}" hx-target="#registrant-table" ' \
-                    'hx-swap="innerHTML">Check In</a></td>' \
-                    '</tr>'.format(p.firstname,
-                                   p.lastname,
-                                   p.email,
-                                   p.mobile,
-                                   p.faculty,
-                                   p.last_checkin or '',
-                                   url_for('check_in_registrant', participant_id=p.id))
+    if name:
+        for p in Participant.query.filter(or_(Participant.firstname.ilike(f'%{name}%'),
+                                                (Participant.lastname.ilike(f'%{name}%')))):
+            template += '<tr>' \
+                        '<td>{}</td>' \
+                        '<td>{}</td>' \
+                        '<td>{}</td>' \
+                        '<td>{}</td>' \
+                        '<td>{}</td>' \
+                        '<td>{}</td>' \
+                        '<td><a class="button is-outlined is-info" hx-post="{}" hx-target="#registrant-table" ' \
+                        'hx-swap="innerHTML">Check In</a></td>' \
+                        '</tr>'.format(p.firstname,
+                                       p.lastname,
+                                       p.email,
+                                       p.mobile,
+                                       p.faculty,
+                                       p.last_checkin or '',
+                                       url_for('check_in_registrant', participant_id=p.id))
     template += '</tbody></table>'
     resp = make_response(template)
     return resp
