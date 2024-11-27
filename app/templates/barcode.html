@@ -86,7 +86,11 @@
             </tr>
             <tr>
                 <td><strong>Checked In {{ today }}</strong></td>
+                {% if total_registrants %}
                 <td>{{ total_check_ins }} ({{ "%.2f"|format(total_check_ins/total_registrants*100.0) }}%)</td>
+                {% else %}
+                <td>{{ total_check_ins }}</td>
+                {% endif %}
             </tr>
             </tbody>
         </table>
