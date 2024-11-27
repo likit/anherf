@@ -51,7 +51,7 @@ mail.init_app(app)
 admin.init_app(app)
 
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, directory='app/migrations')
 
 from .models import *
 
