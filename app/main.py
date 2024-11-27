@@ -140,38 +140,17 @@ def reload_registrants():
     worksheet = sheet.get_worksheet(0)
     new_registrants = 0
     for rec in worksheet.get_all_records():
-        registrant = Participant.query.filter_by(firstname=rec['4. Name '], lastname=rec['6. Last name\n']).first()
+        registrant = Participant.query.filter_by(firstname=rec['3. ชื่อ'], lastname=rec['5. นามสกุล\n']).first()
         if not registrant:
-            new_registrant = Participant(firstname=rec['4. Name '],
-                                         lastname=rec['6. Last name\n'],
-                                         title=rec['1.Title'],
-                                         email=rec['7. E-mail address'],
-                                         mobile=rec['8. Mobile phone number'],
-                                         faculty=rec['10. Institution/University/College/Hospital ']
+            new_registrant = Participant(firstname=rec['3. ชื่อ'],
+                                         lastname=rec['5. นามสกุล\n'],
+                                         title=rec['1. คำนำหน้านาม'],
+                                         email=rec['12. E-mail '],
+                                         mobile=rec['13. โทรศัพท์สำนักงาน '],
+                                         faculty=rec['14. หน่วยงานต้นสังกัด / สถาบันการศึกษา']
                                          )
             new_registration = Registration(regcode=str(uuid.uuid4())[:8],
                                             registered_at=rec['Timestamp'])
-            db.session.add(new_registration)
-            db.session.commit()
-            new_registration.generate_regcode()
-            new_registrant.registers.append(new_registration)
-            db.session.add(new_registrant)
-            db.session.commit()
-            new_registrants += 1
-    sheet = gc.open_by_key(os.environ.get('GOOGLE_SHEET_ID2'))
-    worksheet = sheet.get_worksheet(0)
-    for rec in worksheet.get_all_records():
-        registrant = Participant.query.filter_by(firstname=rec['3. First name'], lastname=rec['5. Last name']).first()
-        if not registrant:
-            new_registrant = Participant(firstname=rec['3. First name'],
-                                         lastname=rec['5. Last name'],
-                                         title=rec['1. Title'],
-                                         email=rec['ที่อยู่อีเมล'],
-                                         mobile=rec['7. Mobile phone number'],
-                                         faculty=rec['9. Institution/University/College/Hospital']
-                                         )
-            new_registration = Registration(regcode=str(uuid.uuid4())[:8],
-                                            registered_at=datetime.datetime.strptime(rec['ประทับเวลา'], '%d/%m/%Y, %H:%M:%S'))
             db.session.add(new_registration)
             db.session.commit()
             new_registration.generate_regcode()
