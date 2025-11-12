@@ -7,6 +7,7 @@ class Participant(db.Model):
     __tablename__ = 'participants'
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     old_id = Column('old_id', Integer)
+    academic_title = Column('academic_title', String(), nullable=True)
     title = Column('title', String(), nullable=True)
     firstname = Column('firstname', String(), nullable=False)
     lastname = Column('lastname', String(), nullable=False)

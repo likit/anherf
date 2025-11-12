@@ -38,12 +38,12 @@ basedir = os.path.dirname(os.path.abspath(__file__))
 qrimage_dir = os.path.join(basedir, 'static/barcodes')
 
 app = Flask(__name__, static_url_path='/static')
-app.config['MAIL_DEBUG'] = True
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_USERNAME'] = SENDER
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+# app.config['MAIL_DEBUG'] = True
+# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+# app.config['MAIL_USERNAME'] = SENDER
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_PORT'] = 587
+# app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('://', 'ql://', 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -140,14 +140,15 @@ def reload_registrants():
     worksheet = sheet.get_worksheet(0)
     new_registrants = 0
     for rec in worksheet.get_all_records():
-        registrant = Participant.query.filter_by(firstname=rec['3. ชื่อ'], lastname=rec['5. นามสกุล\n']).first()
+        registrant = Participant.query.filter_by(firstname=rec['4. ชื่อ'], lastname=rec['6. นามสกุล\n']).first()
         if not registrant:
-            new_registrant = Participant(firstname=rec['3. ชื่อ'],
-                                         lastname=rec['5. นามสกุล\n'],
+            new_registrant = Participant(firstname=rec['4. ชื่อ'],
+                                         lastname=rec['6. นามสกุล\n'],
                                          title=rec['1. คำนำหน้านาม'],
-                                         email=rec['12. E-mail '],
-                                         mobile=rec['13. โทรศัพท์สำนักงาน '],
-                                         faculty=rec['14. หน่วยงานต้นสังกัด / สถาบันการศึกษา']
+                                         email=rec['11. E-mail '],
+                                         mobile=rec['12. โทรศัพท์สำนักงาน '],
+                                         faculty=rec['13. หน่วยงานต้นสังกัด / สถาบันการศึกษา / โรงพยาบาล'],
+                                         profession=rec['8. วิชาชีพสุขภาพ'],
                                          )
             new_registration = Registration(regcode=str(uuid.uuid4())[:8],
                                             registered_at=rec['Timestamp'])
