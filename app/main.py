@@ -137,7 +137,7 @@ def list_registrants():
 @app.route('/register/registrants/reload')
 def reload_registrants():
     sheet = gc.open_by_key(os.environ.get('GOOGLE_SHEET_ID'))
-    worksheet = sheet.get_worksheet(0)
+    worksheet = sheet.worksheet('Form Responses 1')
     new_registrants = 0
     for rec in worksheet.get_all_records():
         registrant = Participant.query.filter_by(firstname=rec['4. ชื่อ'], lastname=rec['6. นามสกุล\n']).first()
